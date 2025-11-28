@@ -1,5 +1,58 @@
 # Documentação do Backend - Sistema de Clima para Produtores de Cana-de-Açúcar
 
+## Setup Local
+
+### 1. Clonar repositório
+```bash
+git clone <repo-url>
+cd cana-clima/backend
+```
+
+### 2. Criar ambiente virtual
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou
+venv\Scripts\activate  # Windows
+```
+
+### 3. Instalar dependências
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configurar variáveis de ambiente
+```bash
+cp .env.example .env
+# Editar .env conforme necessário
+```
+
+### 5. Executar aplicação
+```bash
+uvicorn app.main:app --reload
+```
+
+Acesse: http://localhost:8000/docs
+
+## Docker
+
+### Desenvolvimento
+```bash
+docker build -t cana-clima-backend .
+docker run -p 8000:8000 cana-clima-backend
+```
+
+### Com Docker Compose (requer MongoDB)
+```bash
+# Será configurado posteriormente com frontend
+docker compose up
+```
+
+## Documentação da API
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
 ## 1. Visão Geral
 
 O backend é uma API RESTful desenvolvida em **Python com FastAPI** que atua como camada de inteligência entre o frontend e APIs externas, fornecendo:

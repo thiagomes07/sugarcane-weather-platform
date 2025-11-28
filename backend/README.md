@@ -44,7 +44,6 @@ docker run -p 8000:8000 cana-clima-backend
 
 ### Com Docker Compose (requer MongoDB)
 ```bash
-# Será configurado posteriormente com frontend
 docker compose up
 ```
 
@@ -85,10 +84,10 @@ Embora seja tecnicamente viável consumir APIs diretamente no frontend, o backen
 - Redução de chamadas redundantes às APIs externas
 - Melhor performance percebida pelo usuário
 
-**Segurança**
+**Segurança e Controle de Tráfego**
 - Proteção de chaves de API (NewsAPI)
 - Validação e sanitização de dados antes de persistir
-- Rate limiting centralizado
+- **Rate limiting centralizado via Nginx** para proteger APIs externas e recursos do servidor
 
 **Evolução da Plataforma**
 - Sistema evolui de consulta climática para **fórum de conhecimento** entre produtores
@@ -102,6 +101,7 @@ Embora seja tecnicamente viável consumir APIs diretamente no frontend, o backen
 - Python 3.11+
 - FastAPI (framework web assíncrono)
 - Uvicorn (ASGI server)
+- Nginx (reverse proxy, load balancer, rate limiting)
 - MongoDB (armazenamento de insights)
 - Motor (driver async para MongoDB)
 - Pydantic (validação de dados)
@@ -146,7 +146,10 @@ backend/
 │   └── database/
 │       └── mongodb.py             # Conexão e operações MongoDB
 │
+├── nginx/
+│   └── nginx.conf                 # Configuração Nginx
 ├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -154,11 +157,72 @@ backend/
 
 ---
 
-## 5. API Endpoints
+## 5. Nginx - Reverse Proxy e Rate Limiting
 
-### 5.1 Autocomplete de Localização
+### 5.1 Papel do Nginx
+
+O Nginx atua como camada de entrada para todo tráfego, fornecendo:
+
+- **Reverse Proxy**: Distribui requisições entre réplicas do FastAPI
+- **Load Balancing**: Algoritmo least_conn para distribuição eficiente
+- **Rate Limiting**: Controla taxa de requisições por IP para proteger recursos
+- **SSL/TLS Termination**: Gerencia certificados HTTPS (produção)
+- **Compressão**: Gzip para reduzir payload de resposta
+- **Health Checks**: Remove automaticamente instâncias não-responsivas
+
+### 5.2 Configuração de Rate Limiting
+
+**Zonas de limite definidas:**
+
+```nginx
+# 10MB de memória = ~160k IPs rastreados
+limit_req_zone $binary_remote_addr zone=general:10m rate=30r/m;
+limit_req_zone $binary_remote_addr zone=weather:10m rate=20r/m;
+limit_req_zone $binary_remote_addr zone=insights:10m rate=15r/m;
+```
+
+**Aplicação por endpoint:**
+
+- **Geral** (`/api/v1/*`): 30 requisições/minuto por IP
+- **Weather** (`/api/v1/weather`): 20 req/min (protege Open-Meteo)
+- **Insights** (`/api/v1/insights`): 15 req/min (protege MongoDB)
+- **Burst**: Permite até 5 requisições além do limite com delay
+
+**Resposta ao exceder limite:**
+```json
+HTTP 429 Too Many Requests
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Muitas requisições. Tente novamente em alguns instantes.",
+    "retry_after": 60
+  }
+}
+```
+
+### 5.3 Upstream e Balanceamento
+
+```nginx
+upstream fastapi_backend {
+    least_conn;  # Distribui para servidor com menos conexões ativas
+    server fastapi_1:8000 max_fails=3 fail_timeout=30s;
+    server fastapi_2:8000 max_fails=3 fail_timeout=30s;
+}
+```
+
+- **Health Check**: A cada 30s via `/health`
+- **Failover**: Após 3 falhas consecutivas, instância fica inativa por 30s
+- **Retry**: Requisições falhas são automaticamente redirecionadas para instância saudável
+
+---
+
+## 6. API Endpoints
+
+### 6.1 Autocomplete de Localização
 
 #### `GET /api/v1/locations/search`
+
+**Rate Limit:** 30 requisições/minuto por IP
 
 Retorna sugestões de cidades conforme o usuário digita.
 
@@ -179,14 +243,6 @@ Retorna sugestões de cidades conforme o usuário digita.
       "lat": -23.5505,
       "lon": -46.6333,
       "display_name": "São Paulo, São Paulo, Brasil"
-    },
-    {
-      "name": "São Paulo de Olivença",
-      "state": "Amazonas",
-      "country": "Brazil",
-      "lat": -3.3778,
-      "lon": -68.8714,
-      "display_name": "São Paulo de Olivença, Amazonas, Brasil"
     }
   ]
 }
@@ -194,13 +250,16 @@ Retorna sugestões de cidades conforme o usuário digita.
 
 **Erros:**
 - `400`: Query string muito curta (< 3 caracteres)
+- `429`: Rate limit excedido
 - `500`: Erro no serviço de geocoding
 
 ---
 
-### 5.2 Dados Climáticos Enriquecidos
+### 6.2 Dados Climáticos Enriquecidos
 
 #### `GET /api/v1/weather`
+
+**Rate Limit:** 20 requisições/minuto por IP
 
 Retorna dados climáticos atuais com análise contextualizada para cultivo de cana-de-açúcar.
 
@@ -241,32 +300,9 @@ Retorna dados climáticos atuais com análise contextualizada para cultivo de ca
         "status": "ideal",
         "message": "Temperatura ideal para crescimento vegetativo (21-34°C)",
         "recommendation": "Condições ótimas para fotossíntese e desenvolvimento"
-      },
-      {
-        "parameter": "humidity",
-        "status": "attention",
-        "message": "Umidade moderada (60-70%)",
-        "recommendation": "Monitorar para prevenir doenças fúngicas"
-      },
-      {
-        "parameter": "precipitation",
-        "status": "warning",
-        "message": "Sem precipitação recente",
-        "recommendation": "Considerar irrigação se período seco ultrapassar 7 dias"
-      },
-      {
-        "parameter": "wind",
-        "status": "good",
-        "message": "Vento moderado (< 60 km/h)",
-        "recommendation": "Sem risco de acamamento"
       }
     ],
-    "alerts": [
-      {
-        "severity": "info",
-        "message": "UV index alto - favorável para fotossíntese"
-      }
-    ]
+    "alerts": []
   },
   "forecast_summary": {
     "next_7_days": {
@@ -279,24 +315,20 @@ Retorna dados climáticos atuais com análise contextualizada para cultivo de ca
 }
 ```
 
-**Status dos Fatores:**
-- `ideal`: Condições ótimas
-- `good`: Condições boas
-- `attention`: Requer atenção
-- `warning`: Situação de alerta
-- `critical`: Situação crítica
-
 **Erros:**
 - `400`: Coordenadas inválidas
 - `404`: Localização não encontrada
+- `429`: Rate limit excedido
 - `500`: Erro ao buscar dados climáticos
 - `503`: API Open-Meteo indisponível
 
 ---
 
-### 5.3 Compartilhamento de Insights
+### 6.3 Compartilhamento de Insights
 
 #### `POST /api/v1/insights`
+
+**Rate Limit:** 15 requisições/minuto por IP
 
 Permite que produtores compartilhem observações e práticas sobre suas plantações.
 
@@ -319,12 +351,6 @@ Permite que produtores compartilhem observações e práticas sobre suas planta�
 }
 ```
 
-**Validações:**
-- `author_name`: 2-100 caracteres
-- `content`: 10-1000 caracteres
-- `tags`: 0-5 tags, cada uma com 2-30 caracteres
-- Localização deve ter sido consultada previamente (validação de contexto)
-
 **Response (201):**
 ```json
 {
@@ -337,11 +363,14 @@ Permite que produtores compartilhem observações e práticas sobre suas planta�
 **Erros:**
 - `400`: Dados inválidos ou incompletos
 - `403`: Usuário não consultou clima desta localização
+- `429`: Rate limit excedido
 - `500`: Erro ao salvar no banco de dados
 
 ---
 
 #### `GET /api/v1/insights`
+
+**Rate Limit:** 15 requisições/minuto por IP
 
 Lista insights recentes compartilhados pela comunidade.
 
@@ -363,18 +392,9 @@ Lista insights recentes compartilhados pela comunidade.
         "name": "Ribeirão Preto",
         "state": "São Paulo"
       },
-      "weather_snapshot": {
-        "temperature": 29.5,
-        "humidity": 60,
-        "condition": "Ensolarado"
-      },
       "content": "Aplicamos cobertura morta hoje...",
       "tags": ["manejo", "irrigação"],
-      "created_at": "2025-11-28T14:30:00Z",
-      "reactions": {
-        "helpful": 12,
-        "tried": 5
-      }
+      "created_at": "2025-11-28T14:30:00Z"
     }
   ],
   "pagination": {
@@ -389,6 +409,8 @@ Lista insights recentes compartilhados pela comunidade.
 ---
 
 #### `GET /api/v1/insights/nearby`
+
+**Rate Limit:** 15 requisições/minuto por IP
 
 Retorna insights de localizações próximas (consulta geoespacial).
 
@@ -426,9 +448,11 @@ Retorna insights de localizações próximas (consulta geoespacial).
 
 ---
 
-### 5.4 Health Check
+### 6.4 Health Check
 
 #### `GET /health`
+
+**Rate Limit:** Não aplicado (necessário para monitoramento)
 
 Verifica o status da aplicação e dependências.
 
@@ -445,23 +469,11 @@ Verifica o status da aplicação e dependências.
 }
 ```
 
-**Response (503) - Unhealthy:**
-```json
-{
-  "status": "unhealthy",
-  "timestamp": "2025-11-28T14:30:00Z",
-  "services": {
-    "database": "disconnected",
-    "cache": "operational"
-  }
-}
-```
-
 ---
 
-## 6. Lógica de Negócio - Análise para Cana-de-Açúcar
+## 7. Lógica de Negócio - Análise para Cana-de-Açúcar
 
-### 6.1 Parâmetros Críticos e Limiares
+### 7.1 Parâmetros Críticos e Limiares
 
 A análise climática considera os seguintes fatores críticos para o cultivo:
 
@@ -488,7 +500,7 @@ A análise climática considera os seguintes fatores críticos para o cultivo:
 **Índice UV:**
 - **Favorável**: > 6 (fotossíntese intensa)
 
-### 6.2 Exemplos de Recomendações Geradas
+### 7.2 Exemplos de Recomendações Geradas
 
 **Cenário 1: Temperatura 32°C + Umidade 55% + 10 dias sem chuva**
 ```
@@ -513,9 +525,9 @@ Vistoriar áreas expostas e considerar tutoramentos emergenciais."
 
 ---
 
-## 7. Sistema de Cache
+## 8. Sistema de Cache
 
-### 7.1 Estratégia
+### 8.1 Estratégia
 
 O cache em memória reduz chamadas às APIs externas quando múltiplos usuários consultam a mesma região:
 
@@ -524,28 +536,27 @@ O cache em memória reduz chamadas às APIs externas quando múltiplos usuários
 - **Formato**: `weather:{lat}:{lon}` → Ex: `weather:-21.17:-47.81`
 - **Limpeza**: Job periódico a cada 5 minutos remove entradas expiradas
 
-### 7.2 Benefícios
+### 8.2 Benefícios
 
 - **Performance**: Resposta instantânea para localizações populares
 - **Economia**: Redução de ~70% nas chamadas à Open-Meteo em horários de pico
+- **Proteção**: Combinado com rate limiting do Nginx, previne sobrecarga das APIs externas
 - **Resiliência**: Tolerância a falhas temporárias da API externa
 
-### 7.3 Indicador de Cache
+### 8.3 Indicador de Cache
 
 Cada resposta inclui o campo `"cached": true/false` para transparência.
 
 ---
 
-## 8. Banco de Dados - MongoDB
+## 9. Banco de Dados - MongoDB
 
-### 8.1 Schema da Collection `insights`
+### 9.1 Schema da Collection `insights`
 
 ```javascript
 {
   "_id": ObjectId("674832abc1234567890def12"),
-  
   "author_name": "João Silva",
-  
   "location": {
     "name": "Ribeirão Preto",
     "state": "São Paulo",
@@ -554,7 +565,6 @@ Cada resposta inclui o campo `"cached": true/false` para transparência.
       "coordinates": [-47.8103, -21.1704]  // [longitude, latitude] - GeoJSON
     }
   },
-  
   "weather_snapshot": {
     "temperature": 29.5,
     "humidity": 60,
@@ -562,22 +572,18 @@ Cada resposta inclui o campo `"cached": true/false` para transparência.
     "condition": "Ensolarado",
     "timestamp": ISODate("2025-11-28T14:30:00Z")
   },
-  
-  "content": "Aplicamos cobertura morta hoje. Com essa temperatura...",
-  
+  "content": "Aplicamos cobertura morta hoje...",
   "tags": ["manejo", "irrigação", "cobertura"],
-  
   "reactions": {
     "helpful": 12,
     "tried": 5
   },
-  
   "created_at": ISODate("2025-11-28T14:30:00Z"),
   "updated_at": ISODate("2025-11-28T14:30:00Z")
 }
 ```
 
-### 8.2 Índices
+### 9.2 Índices
 
 ```javascript
 // Consultas geoespaciais (insights nearby)
@@ -593,21 +599,11 @@ db.insights.createIndex({ "tags": 1 })
 db.insights.createIndex({ "location.name": 1, "created_at": -1 })
 ```
 
-### 8.3 Validação de Schema
-
-O MongoDB valida os dados inseridos através de JSON Schema:
-
-- `author_name`: string obrigatória, 2-100 caracteres
-- `location.coordinates`: GeoJSON Point obrigatório
-- `content`: string obrigatória, 10-1000 caracteres
-- `tags`: array opcional, máximo 5 elementos
-- `created_at`: timestamp obrigatório
-
 ---
 
-## 9. Tratamento de Erros
+## 10. Tratamento de Erros
 
-### 9.1 Estrutura Padrão de Erro
+### 10.1 Estrutura Padrão de Erro
 
 Todos os erros seguem o mesmo formato:
 
@@ -622,7 +618,7 @@ Todos os erros seguem o mesmo formato:
 }
 ```
 
-### 9.2 Códigos de Erro
+### 10.2 Códigos de Erro
 
 | Código | HTTP Status | Descrição |
 |--------|-------------|-----------|
@@ -632,14 +628,14 @@ Todos os erros seguem o mesmo formato:
 | `INVALID_COORDINATES` | 400 | Coordenadas fora do intervalo válido |
 | `DATABASE_ERROR` | 500 | Erro ao acessar MongoDB |
 | `VALIDATION_ERROR` | 400 | Dados de entrada inválidos |
-| `RATE_LIMIT_EXCEEDED` | 429 | Limite de requisições excedido |
+| `RATE_LIMIT_EXCEEDED` | 429 | Limite de requisições excedido (Nginx) |
 | `INSIGHT_FORBIDDEN` | 403 | Usuário não consultou clima desta localização |
 
 ---
 
-## 10. Integração com Open-Meteo
+## 11. Integração com Open-Meteo
 
-### 10.1 Dados Solicitados
+### 11.1 Dados Solicitados
 
 A API consome os seguintes parâmetros da Open-Meteo:
 
@@ -655,15 +651,16 @@ A API consome os seguintes parâmetros da Open-Meteo:
 - `temperature_2m_max`, `temperature_2m_min`
 - `precipitation_sum`, `precipitation_hours`
 
-### 10.2 Timeout e Retry
+### 11.2 Timeout e Retry
 
 - **Timeout**: 10 segundos
 - **Retry**: Não há retry automático (cache mitiga falhas temporárias)
 - **Fallback**: Em caso de erro, retorna último valor em cache se disponível
+- **Proteção**: Rate limiting do Nginx previne burst de requisições à API externa
 
 ---
 
-## 11. Variáveis de Ambiente
+## 12. Variáveis de Ambiente
 
 ```bash
 # Application
@@ -688,42 +685,64 @@ NEWSAPI_KEY=your_newsapi_key_here
 # CORS (Frontend URLs permitidas)
 CORS_ORIGINS=http://localhost:3000,https://your-s3-bucket.s3.amazonaws.com
 
-# Rate Limiting
-RATE_LIMIT_PER_MINUTE=60
+# Nginx (gerenciado via nginx.conf)
+# Rate limits definidos em: nginx/nginx.conf
 ```
 
 ---
 
-## 12. Arquitetura de Deploy
+## 13. Arquitetura de Deploy
 
-### 12.1 Estrutura na EC2 Free Tier
+### 13.1 Estrutura na EC2 Free Tier
 
 ```
-┌─────────────────────────────────────────┐
-│         EC2 t2.micro Instance            │
-│                                          │
-│  ┌────────────────────────────────────┐ │
-│  │   Docker Compose Stack             │ │
-│  │                                     │ │
-│  │  • FastAPI (2 réplicas)            │ │
-│  │  • Nginx (Load Balancer)           │ │
-│  │  • MongoDB (persistência)          │ │
-│  └────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│          EC2 t2.micro Instance                 │
+│                                                 │
+│  ┌──────────────────────────────────────────┐  │
+│  │      Docker Compose Stack                │  │
+│  │                                           │  │
+│  │  ┌─────────────────────────────────────┐ │  │
+│  │  │  Nginx (Port 80/443)                │ │  │
+│  │  │  - Reverse Proxy                    │ │  │
+│  │  │  - Load Balancer (least_conn)       │ │  │
+│  │  │  - Rate Limiting (por IP)           │ │  │
+│  │  │  - Health Checks (/health)          │ │  │
+│  │  └─────────────────────────────────────┘ │  │
+│  │              ▼          ▼                 │  │
+│  │  ┌───────────────┐  ┌───────────────┐   │  │
+│  │  │  FastAPI #1   │  │  FastAPI #2   │   │  │
+│  │  │  (Port 8001)  │  │  (Port 8002)  │   │  │
+│  │  └───────────────┘  └───────────────┘   │  │
+│  │              ▼          ▼                 │  │
+│  │  ┌─────────────────────────────────────┐ │  │
+│  │  │  MongoDB (Port 27017)               │ │  │
+│  │  │  - Persistência de insights         │ │  │
+│  │  └─────────────────────────────────────┘ │  │
+│  └──────────────────────────────────────────┘  │
+└────────────────────────────────────────────────┘
 ```
 
-### 12.2 Balanceamento de Carga
+### 13.2 Fluxo de Requisição
+
+```
+Cliente → Nginx (rate limit check) → Upstream selection (least_conn) 
+→ FastAPI instance (cache check) → MongoDB/Open-Meteo → Response
+```
+
+### 13.3 Balanceamento e Alta Disponibilidade
 
 - **Estratégia**: Least connections (Nginx)
-- **Réplicas**: 2 instâncias do FastAPI
+- **Réplicas**: 2 instâncias do FastAPI (portas 8001 e 8002)
 - **Health Check**: Endpoint `/health` verificado a cada 30s
-- **Failover**: Instância não-responsiva é automaticamente removida do pool
+- **Failover**: Instância não-responsiva removida automaticamente do pool
+- **Rate Limiting**: Aplicado antes do balanceamento para proteger todos os recursos
 
-**Justificativa**: Simula autoscaling dentro das limitações da Free Tier, garantindo disponibilidade sem custos adicionais. Para produção, recomenda-se migração para ECS Fargate com autoscaling real.
+**Justificativa**: Simula autoscaling dentro das limitações da Free Tier, garantindo disponibilidade sem custos adicionais. O Nginx gerencia tanto o tráfego quanto a proteção contra abuso, atuando como gateway único para toda a infraestrutura.
 
 ---
 
-## 13. Documentação Automática da API
+## 14. Documentação Automática da API
 
 FastAPI gera documentação interativa automaticamente:
 
@@ -735,27 +754,28 @@ Permite testar todos os endpoints diretamente no navegador.
 
 ---
 
-## 14. Melhorias Futuras
+## 15. Melhorias Futuras
 
-### 14.1 Escalabilidade e Performance
+### 15.1 Escalabilidade e Performance
 - Migrar cache para Redis distribuído
 - Implementar autoscaling real (ECS Fargate)
 - CDN para assets estáticos
 - Compressão de respostas (gzip/brotli)
+- Rate limiting adaptativo baseado em comportamento
 
-### 14.2 Funcionalidades
+### 15.2 Funcionalidades
 - Autenticação JWT para insights (perfis de usuário)
 - Sistema de reações (👍 útil, ✅ testei)
 - Notificações push para alertas críticos
 - API de histórico climático (séries temporais)
 
-### 14.3 Inteligência e Dados
+### 15.3 Inteligência e Dados
 - Machine Learning para previsões personalizadas
 - Integração com imagens de satélite (NDVI)
 - Dashboard analítico com métricas agregadas
 - Marketplace de insumos agrícolas
 
-### 14.4 Qualidade
+### 15.4 Qualidade
 - Testes automatizados (80%+ cobertura)
 - CI/CD com GitHub Actions
 - Monitoramento com Prometheus/Grafana

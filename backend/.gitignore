@@ -22,7 +22,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-scan_repo.py
+scan_back.py
+repo_dump.md
 
 # Environment
 .env

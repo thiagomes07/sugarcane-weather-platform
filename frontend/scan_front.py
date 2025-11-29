@@ -10,6 +10,7 @@ IGNORE_PATTERNS = [
     ".dockerignore",
     ".gitignore",
     "node_modules",
+    ".next",
     "package-lock.json",
     OUTPUT_FILE,
 ]

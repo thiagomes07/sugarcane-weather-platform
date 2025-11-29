@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat&logo=mongodb)](https://www.mongodb.com/)
 
-[🌐 Demo Frontend](http://seu-deploy-frontend.com) • [🔧 API Docs](http://seu-backend.com/docs) • [📖 Documentação](./docs)
+[🌐 Demo Frontend](http://seu-deploy-frontend.com) • [🔧 API Docs](http://seu-backend.com/docs)
 
 </div>
 
@@ -127,7 +127,6 @@ docker compose up -d --build
 | **Frontend** | http://localhost:3000 | Interface web principal |
 | **Backend API** | http://localhost:8000 | Gateway Nginx (load balanced) |
 | **API Docs** | http://localhost:8000/docs | Swagger UI interativa |
-| **ReDoc** | http://localhost:8000/redoc | Documentação alternativa |
 
 ### 🛑 Parar o Projeto
 
@@ -318,17 +317,17 @@ Este projeto foi desenvolvido como parte de um desafio técnico para a empresa *
   <table>
     <tr>
       <td align="center" width="200">
-        <img src="https://github.com/tvolcati.png" width="120px;" alt="Foto de Thiago Volcati" style="border-radius:50%"/>
+        <img src="https://media.licdn.com/dms/image/v2/D4D03AQHh3rHCD36uKA/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1711828725384?e=1766016000&v=beta&t=iLJCng1Xa-5zVB_ZWXaIQAl6Sin9XARkGziuFr-S23Y" width="120px;" alt="Foto de Thiago Volcati" style="border-radius:50%"/>
         <br />
-        <b>Thiago Volcati</b>
+        <b>Thiago Gomes</b>
         <br />
         <sub>Engenheiro de Software Fullstack</sub>
         <br /><br />
-        <a href="https://github.com/tvolcati">
+        <a href="https://github.com/thiagomes07">
           <img src="https://img.shields.io/badge/GitHub-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
         </a>
         <br />
-        <a href="https://www.linkedin.com/in/thiagovolcati/">
+        <a href="https://www.linkedin.com/in/thiagogomesalmeida/">
           <img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"/>
         </a>
       </td>
@@ -343,7 +342,8 @@ Este projeto foi desenvolvido como parte de um desafio técnico para a empresa *
           <li>🎨 <strong>Frontend moderno:</strong> Next.js 14, TypeScript, Tailwind CSS</li>
           <li>🔧 <strong>Backend robusto:</strong> FastAPI, Python, MongoDB</li>
           <li>🐋 <strong>DevOps:</strong> Docker, Nginx, Load Balancing</li>
-          <li>📊 <strong>Arquitetura:</strong> Microsserviços, Cache, Rate Limiting</li>
+          <li>☁️ <strong>Cloud:</strong> AWS (EC2, S3, IAM)</li>
+          <li>📊 <strong>Arquitetura:</strong> Cache, Rate Limiting</li>
           <li>♿ <strong>Boas práticas:</strong> Clean Code, Documentação, Acessibilidade</li>
         </ul>
         <br />

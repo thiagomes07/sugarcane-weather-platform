@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "./providers"; // <-- ADICIONE ISSO
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,7 +13,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     default: "Clima Cana | Dados Climáticos Inteligentes para Cana-de-Açúcar",
-    template: "%s | Clima Cana", // Para páginas individuais: "Página X | Clima Cana"
+    template: "%s | Clima Cana",
   },
   description:
     "Plataforma de monitoramento climático especializada em cana-de-açúcar. Dados precisos, análises contextualizadas e comunidade de produtores compartilhando conhecimento.",
@@ -74,11 +75,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    // Adicione quando tiver os tokens
-    // google: "seu-token-aqui",
-    // yandex: "seu-token-aqui",
-  },
 };
 
 export default function RootLayout({
@@ -95,13 +91,16 @@ export default function RootLayout({
         <meta name="theme-color" content="#2D5F2E" />
       </head>
       <body className="antialiased font-sans min-h-screen flex flex-col">
-        {children}
-        <Toaster
-          position="top-right"
-          richColors
-          expand={false}
-          duration={5000}
-        />
+        {/* ENVOLVA COM PROVIDERS */}
+        <Providers>
+          {children}
+          <Toaster
+            position="top-right"
+            richColors
+            expand={false}
+            duration={5000}
+          />
+        </Providers>
       </body>
     </html>
   );

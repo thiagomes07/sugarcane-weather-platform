@@ -10,6 +10,8 @@ IGNORE_PATTERNS = [
     ".dockerignore",
     ".gitignore",
     "repo_dump.md",
+    "README.md",
+    "scan_back.py",
 ]
 
 

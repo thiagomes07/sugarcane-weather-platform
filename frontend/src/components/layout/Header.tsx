@@ -20,7 +20,7 @@ export function Header() {
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-primary leading-none">
-                Clima Cana
+                Cana Data
               </span>
               <span className="text-xs text-muted-foreground hidden sm:block">
                 Inteligência Climática
@@ -59,7 +59,7 @@ export function Header() {
               className="hidden sm:inline-flex"
             >
               <a
-                href="https://github.com/seu-usuario/clima-cana"
+                href="https://github.com/thiagomes07/sugarcane-weather-platform"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub"

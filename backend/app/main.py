@@ -5,7 +5,7 @@ import logging
 
 from app.config import settings
 from app.database.mongodb import connect_to_mongo, close_mongo_connection
-from app.api.routes import health, locations, weather, insights
+from app.api.routes import health, locations, weather, insights, news
 from app.api.middlewares.error_handler import error_handler_middleware
 
 # Configurar logging
@@ -63,6 +63,11 @@ app.include_router(
     insights.router,
     prefix=f"/api/{settings.API_VERSION}",
     tags=["Insights"]
+)
+app.include_router(
+    news.router,
+    prefix=f"/api/{settings.API_VERSION}",
+    tags=["News"]
 )
 
 @app.get("/")

@@ -10,8 +10,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Clima Cana | Monitoramento Climático para Produtores de Cana-de-Açúcar",
-  description: "Plataforma de monitoramento climático contextualizado para produtores de cana-de-açúcar. Obtenha dados precisos, análises específicas para sua cultura e compartilhe conhecimento com a comunidade.",
+  title: {
+    default: "Clima Cana | Dados Climáticos Inteligentes para Cana-de-Açúcar",
+    template: "%s | Clima Cana", // Para páginas individuais: "Página X | Clima Cana"
+  },
+  description:
+    "Plataforma de monitoramento climático especializada em cana-de-açúcar. Dados precisos, análises contextualizadas e comunidade de produtores compartilhando conhecimento.",
   keywords: [
     "clima",
     "cana-de-açúcar",
@@ -32,10 +36,13 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  ),
   openGraph: {
-    title: "Clima Cana | Monitoramento Climático Inteligente",
-    description: "Dados climáticos contextualizados para produtores de cana-de-açúcar",
+    title: "Clima Cana | Inteligência Climática para sua Lavoura",
+    description:
+      "Monitoramento climático especializado com análises para cultivo de cana-de-açúcar",
     url: "/",
     siteName: "Clima Cana",
     images: [
@@ -51,8 +58,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Clima Cana | Monitoramento Climático Inteligente",
-    description: "Dados climáticos contextualizados para produtores de cana-de-açúcar",
+    title: "Clima Cana | Inteligência Climática para sua Lavoura",
+    description:
+      "Monitoramento climático especializado com análises para cultivo de cana-de-açúcar",
     images: ["/images/og-image.jpg"],
   },
   robots: {
@@ -88,8 +96,8 @@ export default function RootLayout({
       </head>
       <body className="antialiased font-sans min-h-screen flex flex-col">
         {children}
-        <Toaster 
-          position="top-right" 
+        <Toaster
+          position="top-right"
           richColors
           expand={false}
           duration={5000}

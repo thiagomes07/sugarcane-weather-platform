@@ -1,274 +1,318 @@
+"use client";
+
+import { useState } from "react";
+import { Sprout, TrendingUp } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/layout/Container";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { LocationSearch } from "@/components/weather/LocationSearch";
+import { WeatherCard } from "@/components/weather/WeatherCard";
+import { WeatherMetrics } from "@/components/weather/WeatherMetrics";
+import { SugarcaneAnalysis } from "@/components/weather/SugarcaneAnalysis";
+import { ForecastChart } from "@/components/weather/ForecastChart";
+import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
+import { InsightForm } from "@/components/insights/InsightForm";
+import { InsightsList } from "@/components/insights/InsightsList";
+import { InsightFilters } from "@/components/insights/InsightFilters";
+import { NewsFeed } from "@/components/news/NewsFeed";
+import { ErrorMessage } from "@/components/shared/ErrorMessage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
-import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import { ErrorMessage } from "@/components/shared/ErrorMessage";
-import { RateLimitWarning } from "@/components/shared/RateLimitWarning";
-import { Cloud, Droplets, Wind, Thermometer, TrendingUp } from "lucide-react";
+import { useWeather } from "@/hooks/useWeather";
+import { useInsightsTags } from "@/hooks/useInsights";
+import type { LocationSearchResult } from "@/types/location";
 
 export default function Home() {
+  const [location, setLocation] = useState<LocationSearchResult | null>(null);
+  const [showInsightForm, setShowInsightForm] = useState(false);
+  const [insightSort, setInsightSort] = useState<"recent" | "popular">(
+    "recent"
+  );
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Busca dados climáticos quando localização selecionada
+  const {
+    data: weatherData,
+    isLoading: isLoadingWeather,
+    isError: isErrorWeather,
+    error: weatherError,
+    refetch: refetchWeather,
+  } = useWeather({
+    lat: location?.lat,
+    lon: location?.lon,
+    location_name: location?.display_name,
+    enabled: !!location,
+  });
+
+  // Extrai tags dos insights (para filtros)
+  const availableTags = useInsightsTags([]); // TODO: passar insights reais
+
+  const handleLocationSelect = (selectedLocation: LocationSearchResult) => {
+    setLocation(selectedLocation);
+    setShowInsightForm(false); // Fecha form ao trocar localização
+  };
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  // Estado: Nenhuma localização selecionada (Hero)
+  if (!location) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center bg-gradient-to-b from-primary/5 to-white">
+          <Container size="md">
+            <div className="text-center space-y-8 py-16">
+              {/* Hero Icon */}
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl" />
+                  <div className="relative p-8 rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20">
+                    <Sprout className="h-20 w-20 text-primary" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Hero Text */}
+              <div className="space-y-4">
+                <Badge variant="success" className="mx-auto">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Sistema de Monitoramento Climático
+                </Badge>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary leading-tight">
+                  Dados Climáticos Inteligentes
+                  <br />
+                  para Cana-de-Açúcar
+                </h1>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                  Monitore condições climáticas em tempo real com análises
+                  especializadas para cultivo. Compartilhe conhecimento com
+                  outros produtores.
+                </p>
+              </div>
+
+              {/* Search */}
+              <div className="max-w-2xl mx-auto pt-4">
+                <LocationSearch onSelect={handleLocationSelect} />
+                <p className="text-xs text-muted-foreground mt-3">
+                  Busque por cidade ou região para começar
+                </p>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 max-w-4xl mx-auto">
+                {[
+                  {
+                    title: "Análise Climática",
+                    description:
+                      "Dados em tempo real contextualizados para cana-de-açúcar",
+                  },
+                  {
+                    title: "Comunidade",
+                    description:
+                      "Insights compartilhados por produtores de todo país",
+                  },
+                  {
+                    title: "Notícias",
+                    description:
+                      "Últimas atualizações do agronegócio brasileiro",
+                  },
+                ].map((feature, index) => (
+                  <div
+                    key={index}
+                    className="p-6 rounded-xl bg-white border border-gray-200 shadow-sm"
+                  >
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Container>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Estado: Localização selecionada (Dashboard)
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-b from-primary/5 to-white py-16 sm:py-24">
+      <main className="flex-1 bg-gray-50/50">
+        {/* Search Header */}
+        <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
           <Container>
-            <div className="text-center space-y-6 max-w-3xl mx-auto">
-              <Badge variant="success" className="mx-auto">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Sistema de Monitoramento Climático
-              </Badge>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary leading-tight">
-                Dados Climáticos Inteligentes para Cana-de-Açúcar
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Monitore condições climáticas em tempo real com análises
-                especializadas para cultivo de cana-de-açúcar. Compartilhe
-                conhecimento com outros produtores.
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center pt-4">
-                <Button size="lg" className="gap-2">
-                  <Cloud className="h-5 w-5" />
-                  Consultar Clima
-                </Button>
-                <Button size="lg" variant="outline">
-                  Ver Insights da Comunidade
-                </Button>
+            <div className="py-4 flex items-center gap-4">
+              <div className="flex-1">
+                <LocationSearch onSelect={handleLocationSelect} />
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation(null)}
+                className="hidden sm:inline-flex"
+              >
+                Limpar
+              </Button>
             </div>
           </Container>
-        </section>
+        </div>
 
-        {/* Demo Section - Mostrando Componentes */}
-        <section className="py-16">
-          <Container>
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Componentes do Sistema
-            </h2>
+        {/* Dashboard Content */}
+        <Container className="py-8">
+          {/* Loading State */}
+          {isLoadingWeather && <WeatherSkeleton />}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Card de Exemplo */}
-              <Card hover>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Thermometer className="h-5 w-5 text-primary" />
-                    Temperatura
-                  </CardTitle>
-                  <CardDescription>Condições atuais</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="text-3xl font-bold">28°C</div>
-                    <StatusBadge status="ideal" />
-                    <p className="text-sm text-muted-foreground">
-                      Temperatura ideal para crescimento
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Error State */}
+          {isErrorWeather && (
+            <ErrorMessage
+              title="Erro ao Carregar Dados Climáticos"
+              message={
+                weatherError instanceof Error
+                  ? weatherError.message
+                  : "Não foi possível carregar os dados. Tente novamente."
+              }
+              onRetry={refetchWeather}
+              fullPage
+            />
+          )}
 
-              {/* Card de Umidade */}
-              <Card hover>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Droplets className="h-5 w-5 text-blue-500" />
-                    Umidade
-                  </CardTitle>
-                  <CardDescription>Relativa do ar</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="text-3xl font-bold">65%</div>
-                    <StatusBadge status="good" />
-                    <p className="text-sm text-muted-foreground">
-                      Umidade adequada
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Card de Vento */}
-              <Card hover>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wind className="h-5 w-5 text-gray-500" />
-                    Vento
-                  </CardTitle>
-                  <CardDescription>Velocidade atual</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="text-3xl font-bold">4 m/s</div>
-                    <StatusBadge status="good" />
-                    <p className="text-sm text-muted-foreground">
-                      Vento leve, sem riscos
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Estados de Loading */}
-            <div className="mt-12 space-y-6">
-              <h3 className="text-2xl font-semibold">Estados de Interface</h3>
-
-              {/* Skeleton Loading */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Loading State (Skeleton)
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <SkeletonCard />
-                  <SkeletonCard />
-                  <SkeletonCard />
-                </div>
-              </div>
-
-              {/* Loading Spinner */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Loading Spinner
-                </h4>
-                <Card>
-                  <CardContent className="py-12">
-                    <LoadingSpinner text="Carregando dados climáticos..." />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Error State */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Error Message
-                </h4>
-                <ErrorMessage
-                  title="Erro ao Carregar Dados"
-                  message="Não foi possível conectar ao serviço de clima. Verifique sua conexão e tente novamente."
-                  onRetry={() => alert("Tentando novamente...")}
+          {/* Success State */}
+          {weatherData && !isLoadingWeather && !isErrorWeather && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Coluna Esquerda: Clima (2/3 do espaço) */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Weather Card */}
+                <WeatherCard
+                  weather={weatherData.current}
+                  status={weatherData.sugarcane_analysis.overallStatus}
                 />
-              </div>
 
-              {/* Rate Limit Warning */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Rate Limit Warning
-                </h4>
-                <RateLimitWarning retryAfter={60} />
-              </div>
+                {/* Weather Metrics */}
+                <WeatherMetrics weather={weatherData.current} />
 
-              {/* Status Badges */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Status Badges
-                </h4>
-                <div className="flex flex-wrap gap-3">
-                  <StatusBadge status="ideal" />
-                  <StatusBadge status="good" />
-                  <StatusBadge status="attention" />
-                  <StatusBadge status="critical" />
+                {/* Sugarcane Analysis */}
+                <SugarcaneAnalysis weather={weatherData.current} />
+
+                {/* Forecast Charts */}
+                <ForecastChart forecast={weatherData.forecast} />
+
+                {/* Insights Section (Mobile Only) */}
+                <div className="lg:hidden space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Insights da Comunidade
+                    </h2>
+                    <Button
+                      variant={showInsightForm ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => setShowInsightForm(!showInsightForm)}
+                    >
+                      {showInsightForm ? "Cancelar" : "Compartilhar"}
+                    </Button>
+                  </div>
+
+                  {showInsightForm && (
+                    <InsightForm
+                      location={{
+                        name: location.name,
+                        state: location.state,
+                        country: location.country,
+                        lat: location.lat,
+                        lon: location.lon,
+                      }}
+                      weather={weatherData.current}
+                      onSuccess={() => setShowInsightForm(false)}
+                    />
+                  )}
+
+                  <InsightFilters
+                    selectedSort={insightSort}
+                    onSortChange={setInsightSort}
+                    availableTags={availableTags}
+                    selectedTags={selectedTags}
+                    onTagToggle={handleTagToggle}
+                  />
+
+                  <InsightsList
+                    location={location.name}
+                    tags={selectedTags.length > 0 ? selectedTags : undefined}
+                    sort={insightSort}
+                    onCreateClick={() => setShowInsightForm(true)}
+                  />
+                </div>
+
+                {/* News Section (Mobile Only) */}
+                <div className="lg:hidden">
+                  <NewsFeed category="SUGARCANE" pageSize={6} />
                 </div>
               </div>
 
-              {/* Buttons */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Buttons
-                </h4>
-                <div className="flex flex-wrap gap-3">
-                  <Button>Default</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="ghost">Ghost</Button>
-                  <Button variant="success">Success</Button>
-                  <Button variant="warning">Warning</Button>
-                  <Button variant="destructive">Destructive</Button>
-                  <Button loading>Loading...</Button>
+              {/* Coluna Direita: Insights + News (1/3 do espaço - Desktop Only) */}
+              <div className="hidden lg:block space-y-8">
+                {/* Insights Header */}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Comunidade
+                  </h2>
+                  <Button
+                    variant={showInsightForm ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => setShowInsightForm(!showInsightForm)}
+                  >
+                    {showInsightForm ? "Cancelar" : "Compartilhar"}
+                  </Button>
+                </div>
+
+                {/* Insight Form */}
+                {showInsightForm && (
+                  <InsightForm
+                    location={{
+                      name: location.name,
+                      state: location.state,
+                      country: location.country,
+                      lat: location.lat,
+                      lon: location.lon,
+                    }}
+                    weather={weatherData.current}
+                    onSuccess={() => setShowInsightForm(false)}
+                  />
+                )}
+
+                {/* Filters */}
+                <InsightFilters
+                  selectedSort={insightSort}
+                  onSortChange={setInsightSort}
+                  availableTags={availableTags}
+                  selectedTags={selectedTags}
+                  onTagToggle={handleTagToggle}
+                />
+
+                {/* Insights List */}
+                <InsightsList
+                  location={location.name}
+                  tags={selectedTags.length > 0 ? selectedTags : undefined}
+                  sort={insightSort}
+                  onCreateClick={() => setShowInsightForm(true)}
+                />
+
+                {/* News Feed */}
+                <div className="pt-8 border-t border-gray-200">
+                  <NewsFeed category="SUGARCANE" pageSize={6} />
                 </div>
               </div>
-
-              {/* Badges */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Badges
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  <Badge>Default</Badge>
-                  <Badge variant="secondary">Secondary</Badge>
-                  <Badge variant="success">Success</Badge>
-                  <Badge variant="warning">Warning</Badge>
-                  <Badge variant="error">Error</Badge>
-                  <Badge variant="info">Info</Badge>
-                  <Badge variant="outline">Outline</Badge>
-                </div>
-              </div>
             </div>
-          </Container>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-16 bg-muted/30">
-          <Container>
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">
-                Recursos da Plataforma
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Ferramentas especializadas para maximizar sua produtividade no
-                cultivo de cana-de-açúcar
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Análise Climática</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Dados em tempo real com análises contextualizadas para cada
-                    fase de cultivo da cana-de-açúcar.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Comunidade</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Compartilhe insights e aprenda com experiências de outros
-                    produtores em diferentes regiões.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notícias</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Mantenha-se atualizado com as últimas notícias do
-                    agronegócio e inovações do setor.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </Container>
-        </section>
+          )}
+        </Container>
       </main>
 
       <Footer />

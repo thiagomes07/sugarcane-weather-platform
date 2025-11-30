@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class GeocodingService:
     def __init__(self):
-        self.geolocator = Nominatim(user_agent="cana-clima/1.0")
+        self.geolocator = Nominatim(user_agent="cana-data/1.0")
     
     def search_locations(self, query: str, limit: int = 5) -> List[Dict]:
         """Busca localizações por nome (forward geocoding)"""

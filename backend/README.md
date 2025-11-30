@@ -5,7 +5,7 @@
 ### 1. Clonar repositório
 ```bash
 git clone <repo-url>
-cd cana-clima/backend
+cd cana-data/backend
 ```
 
 ### 2. Criar ambiente virtual
@@ -38,8 +38,8 @@ Acesse: http://localhost:8000/docs
 
 ### Desenvolvimento
 ```bash
-docker build -t cana-clima-backend .
-docker run -p 8000:8000 cana-clima-backend
+docker build -t cana-data-backend .
+docker run -p 8000:8000 cana-data-backend
 ```
 
 ### Com Docker Compose (requer MongoDB)

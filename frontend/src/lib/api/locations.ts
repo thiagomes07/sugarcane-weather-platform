@@ -23,8 +23,13 @@ const MAX_RECENT_LOCATIONS = 5;
 // ============================================
 
 export interface SearchLocationsParams {
-  q: string; // Query de busca
-  limit?: number; // Máximo de resultados (padrão 10)
+  q: string;
+  limit?: number;
+}
+
+interface ReverseGeocodeResponse {
+  location: LocationSearchResult;
+  success: boolean;
 }
 
 // ============================================
@@ -33,35 +38,25 @@ export interface SearchLocationsParams {
 
 /**
  * Busca localizações por nome (autocomplete)
- *
  * Rate limit: 5 req/s, burst 10
- * Mitigação: Debounce de 300ms no frontend
- *
- * @throws RateLimitError - Se atingir rate limit (429)
- * @throws Error - Se query muito curta
  */
 export async function searchLocations(
   params: SearchLocationsParams
 ): Promise<LocationSearchResponse> {
   const { q, limit = 10 } = params;
 
-  // Validação
   if (!q || q.trim().length < MIN_QUERY_LENGTH) {
     throw new Error(
       `Query deve ter pelo menos ${MIN_QUERY_LENGTH} caracteres.`
     );
   }
 
-  // Sanitização básica
   const sanitizedQuery = q.trim();
-
-  // Query params
   const queryParams = new URLSearchParams({
     q: sanitizedQuery,
     limit: limit.toString(),
   });
 
-  // Requisição com retry (não retenta 429)
   return retryWithBackoff(
     () =>
       get<LocationSearchResponse>(`/api/v1/locations/search?${queryParams}`),
@@ -77,10 +72,6 @@ export async function searchLocations(
   );
 }
 
-/**
- * Busca reversa de geocoding (coordenadas → endereço)
- * Útil para quando usuário permite geolocalização do navegador
- */
 export async function reverseGeocode(
   lat: number,
   lon: number
@@ -97,10 +88,8 @@ export async function reverseGeocode(
   try {
     const response = await retryWithBackoff(
       () =>
-        get<{ location: LocationSearchResult }>(
-          `/api/v1/locations/reverse?${queryParams}`
-        ),
-      { maxRetries: 2 }
+        get<ReverseGeocodeResponse>(`/api/v1/locations/reverse?${queryParams}`),
+      { maxRetries: 2, initialDelay: 1000 }
     );
 
     return response.location;
@@ -121,19 +110,15 @@ export interface RecentLocation {
   lat: number;
   lon: number;
   display_name: string;
-  searched_at: string; // ISO timestamp
+  searched_at: string;
 }
 
-/**
- * Salva localização nas recentes
- */
 export function saveRecentLocation(
   location: Omit<RecentLocation, "searched_at">
 ): void {
   try {
     const recents = getRecentLocations();
 
-    // Remove duplicata se existir (mesma lat/lon)
     const filtered = recents.filter(
       (loc) =>
         !(
@@ -142,11 +127,10 @@ export function saveRecentLocation(
         )
     );
 
-    // Adiciona no início
     const updated: RecentLocation[] = [
       { ...location, searched_at: new Date().toISOString() },
       ...filtered,
-    ].slice(0, MAX_RECENT_LOCATIONS); // Mantém apenas as N mais recentes
+    ].slice(0, MAX_RECENT_LOCATIONS);
 
     localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify(updated));
   } catch (error) {
@@ -154,9 +138,6 @@ export function saveRecentLocation(
   }
 }
 
-/**
- * Recupera localizações recentes
- */
 export function getRecentLocations(): RecentLocation[] {
   try {
     const stored = localStorage.getItem(RECENT_LOCATIONS_KEY);
@@ -170,9 +151,6 @@ export function getRecentLocations(): RecentLocation[] {
   }
 }
 
-/**
- * Limpa localizações recentes
- */
 export function clearRecentLocations(): void {
   localStorage.removeItem(RECENT_LOCATIONS_KEY);
 }
@@ -184,16 +162,17 @@ export function clearRecentLocations(): void {
 export interface GeolocationResult {
   lat: number;
   lon: number;
-  accuracy: number; // metros
+  accuracy: number;
 }
 
-/**
- * Obtém localização atual do usuário via navegador
- */
 export async function getCurrentPosition(): Promise<GeolocationResult> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error("Geolocalização não suportada pelo navegador"));
+      reject(
+        new Error(
+          "Geolocalização não suportada pelo navegador. Use um navegador moderno (Chrome, Firefox, Safari, Edge)."
+        )
+      );
       return;
     }
 
@@ -210,13 +189,15 @@ export async function getCurrentPosition(): Promise<GeolocationResult> {
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            message = "Permissão de localização negada";
+            message =
+              "Permissão de localização negada. Autorize o navegador a acessar sua localização nas configurações.";
             break;
           case error.POSITION_UNAVAILABLE:
-            message = "Localização indisponível";
+            message =
+              "Sua localização não está disponível. Tente usar WiFi ou GPS.";
             break;
           case error.TIMEOUT:
-            message = "Tempo esgotado ao obter localização";
+            message = "Tempo esgotado ao obter localização. Tente novamente.";
             break;
         }
 
@@ -225,7 +206,7 @@ export async function getCurrentPosition(): Promise<GeolocationResult> {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000, // Cache de 5 minutos
+        maximumAge: 300000,
       }
     );
   });
@@ -248,20 +229,14 @@ function isValidCoordinates(lat: number, lon: number): boolean {
   );
 }
 
-/**
- * Normaliza nome de localização para busca
- */
 export function normalizeLocationName(name: string): string {
   return name
     .trim()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, ""); // Remove acentos
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-/**
- * Formata display name de localização
- */
 export function formatDisplayName(
   name: string,
   state?: string,

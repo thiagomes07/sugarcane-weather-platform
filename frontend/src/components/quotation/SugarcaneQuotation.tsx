@@ -17,7 +17,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  TooltipProps,
 } from "recharts";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorMessage } from "@/components/shared/ErrorMessage";
@@ -308,7 +307,7 @@ export function SugarcaneQuotation() {
 /**
  * Tooltip customizado para o gráfico
  */
-function CustomTooltip({ active, payload }: TooltipProps<any, any>) {
+function CustomTooltip({ active, payload }: any) {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0].payload;

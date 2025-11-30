@@ -63,7 +63,7 @@ export async function searchLocations(
     {
       maxRetries: 2,
       initialDelay: 500,
-      onRetry: (error, attempt) => {
+      onRetry: (attempt) => {
         console.log(
           `[Locations] Tentativa ${attempt} de busca por "${sanitizedQuery}"`
         );

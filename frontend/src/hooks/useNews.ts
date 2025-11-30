@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getNews, type GetNewsParams } from '@/lib/api/news';
+import { getNews } from '@/lib/api/news';
 import type { ProcessedNewsArticle } from '@/types/news';
 
 interface UseNewsOptions {
@@ -30,7 +30,6 @@ export function useNews(options: UseNewsOptions = {}) {
     queryFn: async () => {
       try {
         return await getNews({
-          query,
           category,
           pageSize,
           sortBy,

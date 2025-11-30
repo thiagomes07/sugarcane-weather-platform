@@ -13,10 +13,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  TooltipProps,
 } from 'recharts';
 import type { ForecastResponse } from '@/types/weather';
-import { formatTemperature, formatRainfall, formatDateShort } from '@/lib/utils/format';
+import { formatTemperature, formatRainfall } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
 interface ForecastChartProps {
@@ -188,7 +187,7 @@ function processForecastData(forecast: ForecastResponse): ChartDataPoint[] {
 }
 
 // Tooltip customizado
-function CustomTooltip({ active, payload, type }: TooltipProps<any, any> & { type: 'temperature' | 'rainfall' }) {
+function CustomTooltip({ active, payload, type }: any) {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0].payload;

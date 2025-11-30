@@ -12,7 +12,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, FileText, File, Loader2, ChevronDown } from 'lucide-react';
+import { Download, FileText, File, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -23,7 +23,6 @@ import {
   exportAllToCSV,
   exportPageToPDF,
   generateFilename,
-  type ExportData,
 } from '@/lib/utils/export';
 import type { WeatherResponse } from '@/types/weather';
 import type { Insight } from '@/types/insight';
@@ -302,7 +301,6 @@ function ExportMenu({
   hasNews,
   hasQuotation,
   isLoading,
-  compact = false,
 }: ExportMenuProps) {
   const itemClass = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 

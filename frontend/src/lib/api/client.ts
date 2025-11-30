@@ -1,8 +1,3 @@
-/**
- * Cliente HTTP Axios com interceptors para Rate Limiting
- * Implementa a estratégia de resiliência da Seção 7 da documentação
- */
-
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 import { env } from "@/config/env";
@@ -10,9 +5,7 @@ import {
   ERROR_CODES,
   getErrorMessage,
   getErrorCodeFromStatus,
-  isAPIError,
   type APIError,
-  type ErrorCode,
 } from "@/lib/constants/errors";
 
 // ============================================

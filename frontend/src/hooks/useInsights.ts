@@ -13,12 +13,11 @@ import { toast } from 'sonner';
 import {
   getInsights,
   createInsight,
-  type CreateInsightRequest,
 } from '@/lib/api/insights';
 import type {
-  ListInsightsQuery,
   ListInsightsResponse,
   CreateInsightResponse,
+  CreateInsightRequest, // 🟢 CORREÇÃO: Adicionado aqui
 } from '@/types/insight';
 import { isRateLimitError } from '@/lib/api/client';
 import { useRateLimitHandler } from './useRateLimitHandler';
@@ -118,7 +117,7 @@ export function useCreateInsight() {
         throw error;
       }
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       // Invalida cache de insights para forçar reload
       queryClient.invalidateQueries({ queryKey: ['insights'] });
 

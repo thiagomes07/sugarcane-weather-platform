@@ -16,7 +16,6 @@ import {
   OVERALL_STATUS_MESSAGES,
 } from '@/lib/constants/sugarcane';
 import type { CurrentWeather } from '@/types/weather';
-import type { WeatherStatus } from '@/lib/constants/weather';
 import { cn } from '@/lib/utils';
 
 interface SugarcaneAnalysisProps {

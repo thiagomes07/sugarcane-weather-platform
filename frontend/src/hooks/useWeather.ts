@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getWeather, type GetWeatherParams } from '@/lib/api/weather';
+import { getWeather } from '@/lib/api/weather';
 import type { WeatherResponse } from '@/types/weather';
 import { isRateLimitError } from '@/lib/api/client';
 import { useRateLimitHandler } from './useRateLimitHandler';

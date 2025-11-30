@@ -58,7 +58,7 @@ export async function getWeather(
     {
       maxRetries: 2,
       initialDelay: 1000,
-      onRetry: (error, attempt, delay) => {
+      onRetry: (attempt, delay) => {
         console.log(`[Weather] Tentativa ${attempt} após ${delay}ms`);
       },
     }

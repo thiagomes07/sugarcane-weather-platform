@@ -41,7 +41,7 @@ export function InsightForm({ location, weather, onSuccess, className }: Insight
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<CreateInsightFormData>({
+  } = useForm({
     resolver: zodResolver(createInsightSchema),
     defaultValues: {
       authorName: '',

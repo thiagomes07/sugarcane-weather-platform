@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertCircle, AlertTriangle, XCircle } from "lucide-react"
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { WeatherStatus } from "@/lib/constants/weather"
 import { cn } from "@/lib/utils"

@@ -71,7 +71,7 @@ export async function retryWithBackoff<T>(
  * NÃO retenta rate limiting (429) - isso é tratado no interceptor
  * Retenta apenas erros de rede/timeout
  */
-function defaultShouldRetry(error: unknown, attemptNumber: number): boolean {
+function defaultShouldRetry(error: unknown): boolean {
   // Nunca retenta rate limiting (tratado no interceptor)
   if (isRateLimitError(error)) {
     return false;

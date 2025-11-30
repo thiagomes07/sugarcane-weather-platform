@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Calendar, Thermometer, Droplets, User } from 'lucide-react';
+import { MapPin, Calendar, Thermometer, Droplets } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatRelativeTime, formatTemperature, formatPercentage } from '@/lib/utils/format';

@@ -57,7 +57,7 @@ export async function getSugarcaneQuotation(): Promise<QuotationData[]> {
     {
       maxRetries: 2,
       initialDelay: 1000,
-      onRetry: (error, attempt, delay) => {
+      onRetry: (attempt, delay) => {
         console.log(
           `[API] Tentativa ${attempt} de busca de cotação (aguardando ${delay}ms)`
         );

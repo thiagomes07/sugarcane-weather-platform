@@ -6,8 +6,9 @@ services:
   # ============================================
   mongodb:
     image: mongo:7.0
-    container_name: cana-clima-mongodb
+    container_name: cana-data-mongodb
     restart: unless-stopped
+    command: ["mongod", "--quiet"]
     ports:
       - "27017:27017"
     environment:
@@ -15,10 +16,10 @@ services:
     volumes:
       - mongodb_data:/data/db
     networks:
-      - cana-clima-network
+      - cana-data-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
 
@@ -29,7 +30,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: cana-clima-backend-1
+    container_name: cana-data-backend-1
     restart: unless-stopped
     ports:
       - "8001:8000"
@@ -48,7 +49,7 @@ services:
       mongodb:
         condition: service_healthy
     networks:
-      - cana-clima-network
+      - cana-data-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -60,7 +61,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: cana-clima-backend-2
+    container_name: cana-data-backend-2
     restart: unless-stopped
     ports:
       - "8002:8000"
@@ -79,7 +80,7 @@ services:
       mongodb:
         condition: service_healthy
     networks:
-      - cana-clima-network
+      - cana-data-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -92,7 +93,7 @@ services:
   # ============================================
   nginx:
     image: nginx:1.25-alpine
-    container_name: cana-clima-nginx
+    container_name: cana-data-nginx
     restart: unless-stopped
     ports:
       - "8000:80"
@@ -102,7 +103,7 @@ services:
       - fastapi_1
       - fastapi_2
     networks:
-      - cana-clima-network
+      - cana-data-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 10s
@@ -117,7 +118,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
-    container_name: cana-clima-frontend
+    container_name: cana-data-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -135,13 +136,13 @@ services:
     depends_on:
       - nginx
     networks:
-      - cana-clima-network
+      - cana-data-network
 
 # ============================================
 # NETWORKS
 # ============================================
 networks:
-  cana-clima-network:
+  cana-data-network:
     driver: bridge
 
 # ============================================

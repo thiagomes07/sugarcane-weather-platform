@@ -27,7 +27,8 @@ class OpenMeteoService:
                 "temperature_2m_max",
                 "temperature_2m_min",
                 "precipitation_sum",
-                "precipitation_hours"
+                "precipitation_hours",
+                "sunrise", "sunset"
             ],
             "timezone": "auto",
             "forecast_days": 7

@@ -1,21 +1,24 @@
-'use client';
+"use client";
 
-import { Newspaper } from 'lucide-react';
-import { NewsCard } from './NewsCard';
-import { NewsSkeleton } from './NewsSkeleton';
-import { useNews } from '@/hooks/useNews';
-import { cn } from '@/lib/utils';
+import { Newspaper } from "lucide-react";
+import { NewsCard } from "./NewsCard";
+import { NewsSkeleton } from "./NewsSkeleton";
+import { useNews } from "@/hooks/useNews";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface NewsFeedProps {
-  category?: 'AGRIBUSINESS' | 'SUGARCANE' | 'WEATHER';
+  category?: "AGRIBUSINESS" | "SUGARCANE" | "WEATHER";
   pageSize?: number;
   className?: string;
+  compactMode?: boolean; // Novo prop para forçar modo compacto
 }
 
 export function NewsFeed({
-  category = 'AGRIBUSINESS',
-  pageSize = 9,
+  category = "AGRIBUSINESS",
+  pageSize = 5,
   className,
+  compactMode = false,
 }: NewsFeedProps) {
   const { data: articles, isLoading } = useNews({
     category,
@@ -23,42 +26,48 @@ export function NewsFeed({
   });
 
   if (isLoading) {
-    return <NewsSkeleton className={className} />;
+    return <NewsSkeleton count={pageSize} className={className} />;
   }
 
-  // Falha silenciosa: se não houver artigos, não mostra nada
   if (!articles || articles.length === 0) {
-    return null;
+    return (
+      <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg border border-dashed border-gray-200">
+        <Newspaper className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p>Nenhuma notícia encontrada.</p>
+      </div>
+    );
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-blue-50">
-          <Newspaper className="h-6 w-6 text-blue-600" />
+    <div className={cn("flex flex-col h-full", className)}>
+      {/* Header simples */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex items-center gap-2">
+          <Newspaper className="h-5 w-5 text-blue-600" />
+          <h2 className="font-bold text-gray-900">Notícias do Setor</h2>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Notícias do Agronegócio
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Últimas atualizações do setor
-          </p>
-        </div>
+        {/* Opcional: Link para ver mais */}
+        <Button
+          variant="link"
+          size="sm"
+          className="text-xs h-auto p-0 text-blue-600"
+        >
+          Ver todas
+        </Button>
       </div>
 
-      {/* Grid de Notícias */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Lista Vertical - Ocupa 100% da largura do pai */}
+      <div className="flex flex-col gap-3">
         {articles.map((article) => (
-          <NewsCard key={article.id} article={article} />
+          <NewsCard key={article.id} article={article} compact={compactMode} />
         ))}
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-xs text-muted-foreground pt-4">
-        Notícias atualizadas a cada hora • Fonte: NewsAPI
-      </p>
+      <div className="mt-3 text-center border-t border-gray-100 pt-2">
+        <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+          Fonte: NewsAPI • Atualizado agora
+        </p>
+      </div>
     </div>
   );
 }

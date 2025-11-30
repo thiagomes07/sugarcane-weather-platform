@@ -25,7 +25,7 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
 
   const { data, isLoading } = useLocations({ query, enabled: query.length >= 2 });
 
-  const results = data?.results || [];
+  const results = data?.suggestions || [];
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {

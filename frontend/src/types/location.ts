@@ -13,7 +13,7 @@ export interface LocationSearchResult {
 }
 
 export interface LocationSearchResponse {
-  results: LocationSearchResult[];
+  suggestions: LocationSearchResult[];
   query: string;
   count: number;
 }

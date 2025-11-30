@@ -90,7 +90,10 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2D5F2E" />
       </head>
-      <body className="antialiased font-sans min-h-screen flex flex-col">
+      <body
+        className="antialiased font-sans min-h-screen flex flex-col"
+        suppressHydrationWarning={true}
+      >
         {/* ENVOLVA COM PROVIDERS */}
         <Providers>
           {children}

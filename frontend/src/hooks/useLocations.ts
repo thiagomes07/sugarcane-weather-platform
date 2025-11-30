@@ -36,7 +36,7 @@ export function useLocations(options: UseLocationsOptions) {
     queryKey: ['locations', debouncedQuery, limit],
     queryFn: async () => {
       if (!isValidQuery) {
-        return { results: [], query: debouncedQuery, count: 0 };
+        return { suggestions: [], query: debouncedQuery, count: 0 };
       }
 
       try {

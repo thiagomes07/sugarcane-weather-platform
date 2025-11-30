@@ -1,29 +1,42 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, Loader2, Navigation } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useLocations } from '@/hooks/useLocations';
-import { getCurrentPosition, reverseGeocode, saveRecentLocation } from '@/lib/api/locations';
-import type { LocationSearchResult } from '@/types/location';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useState, useRef, useEffect } from "react";
+import { Search, MapPin, Loader2, Navigation, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useLocations } from "@/hooks/useLocations";
+import {
+  getCurrentPosition,
+  reverseGeocode,
+  saveRecentLocation,
+} from "@/lib/api/locations";
+import type { LocationSearchResult } from "@/types/location";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface LocationSearchProps {
   onSelect: (location: LocationSearchResult) => void;
   className?: string;
 }
 
+// ✅ Constante de validação
+const MIN_QUERY_LENGTH = 3;
+
 export function LocationSearch({ onSelect, className }: LocationSearchProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [gettingLocation, setGettingLocation] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading } = useLocations({ query, enabled: query.length >= 2 });
+  // ✅ Controla se a query tem comprimento mínimo para buscar
+  const isValidQuery = query.trim().length >= MIN_QUERY_LENGTH;
+
+  const { data, isLoading } = useLocations({
+    query,
+    enabled: isValidQuery, // ✅ Só busca se query é válida
+  });
 
   const results = data?.suggestions || [];
 
@@ -39,8 +52,8 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Reset highlighted index quando results mudam
@@ -67,21 +80,23 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
     if (!isOpen || results.length === 0) return;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         setHighlightedIndex((prev) => (prev + 1) % results.length);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev - 1 + results.length) % results.length);
+        setHighlightedIndex(
+          (prev) => (prev - 1 + results.length) % results.length
+        );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (results[highlightedIndex]) {
           handleSelect(results[highlightedIndex]);
         }
         break;
-      case 'Escape':
+      case "Escape":
         setIsOpen(false);
         break;
     }
@@ -95,13 +110,13 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
 
       if (location) {
         handleSelect(location);
-        toast.success('Localização obtida com sucesso!');
+        toast.success("Localização obtida com sucesso!");
       } else {
-        toast.error('Não foi possível identificar sua localização');
+        toast.error("Não foi possível identificar sua localização");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Erro ao obter localização'
+        error instanceof Error ? error.message : "Erro ao obter localização"
       );
     } finally {
       setGettingLocation(false);
@@ -109,14 +124,14 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
   };
 
   return (
-    <div className={cn('relative w-full', className)}>
+    <div className={cn("relative w-full", className)}>
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Buscar localização..."
+            placeholder="Buscar localização (mín. 3 caracteres)..."
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -126,8 +141,15 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
             onKeyDown={handleKeyDown}
             className="pl-10 pr-10"
           />
+
+          {/* ✅ Loader ou ícone de aviso */}
           {isLoading && (
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
+          )}
+
+          {/* ✅ Aviso de caracteres insuficientes */}
+          {!isLoading && query.length > 0 && !isValidQuery && (
+            <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-500" />
           )}
         </div>
 
@@ -146,8 +168,16 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
         </Button>
       </div>
 
+      {/* ✅ Mensagem de validação */}
+      {query.length > 0 && !isValidQuery && (
+        <p className="text-xs text-yellow-600 mt-1.5 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Digite pelo menos {MIN_QUERY_LENGTH} caracteres para buscar
+        </p>
+      )}
+
       {/* Dropdown de resultados */}
-      {isOpen && query.length >= 2 && (
+      {isOpen && isValidQuery && (
         <div
           ref={dropdownRef}
           className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-gray-200 shadow-lg max-h-80 overflow-y-auto"
@@ -177,10 +207,10 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
                     onClick={() => handleSelect(location)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     className={cn(
-                      'w-full px-4 py-3 text-left transition-colors',
-                      'hover:bg-primary/5 cursor-pointer',
-                      highlightedIndex === index && 'bg-primary/5',
-                      'focus:outline-none focus:bg-primary/10'
+                      "w-full px-4 py-3 text-left transition-colors",
+                      "hover:bg-primary/5 cursor-pointer",
+                      highlightedIndex === index && "bg-primary/5",
+                      "focus:outline-none focus:bg-primary/10"
                     )}
                   >
                     <div className="flex items-start gap-3">

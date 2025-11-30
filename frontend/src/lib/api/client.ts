@@ -108,15 +108,16 @@ apiClient.interceptors.response.use(
   },
 
   // Erro: processa rate limiting e outros erros
-  (error: AxiosError<APIError>) => {
+  (error: AxiosError<APIError | any>) => {
     const status = error.response?.status;
     const endpoint = error.config?.url || "unknown";
+    const responseData = error.response?.data;
 
     // ============================================
     // TRATAMENTO DE RATE LIMITING (429)
     // ============================================
     if (status === 429) {
-      const apiError = error.response?.data;
+      const apiError = responseData as APIError | undefined;
       const retryAfter = apiError?.error?.retry_after || 60; // padrão 60s
 
       console.warn(
@@ -145,7 +146,12 @@ apiClient.interceptors.response.use(
       rateLimitError.endpoint = endpoint;
       rateLimitError.response = {
         status: 429,
-        data: apiError!,
+        data: apiError || {
+          error: {
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Rate limit exceeded",
+          },
+        },
       };
 
       return Promise.reject(rateLimitError);
@@ -170,17 +176,30 @@ apiClient.interceptors.response.use(
     // Erro com resposta do servidor
     const errorCode = getErrorCodeFromStatus(status || 500);
     const message =
-      error.response.data?.error?.message || getErrorMessage(errorCode);
+      (responseData as any)?.error?.message || getErrorMessage(errorCode);
 
-    // Log detalhado em desenvolvimento
+    // ✅ CORREÇÃO: Tratamento seguro de logging
     if (env.isDevelopment) {
-      console.error("[API] Error:", {
+      // Cria um objeto seguro para logar (evita circular references)
+      const safeLogObject = {
         endpoint,
         status,
         errorCode,
         message,
-        data: error.response.data,
-      });
+        hasData: !!responseData,
+      };
+
+      try {
+        console.error("[API] Error:", safeLogObject);
+      } catch (logError) {
+        // Fallback se houver erro ao logar
+        console.error("[API] Error (fallback):", {
+          endpoint,
+          status,
+          errorCode,
+          message,
+        });
+      }
     }
 
     // Mostra toast baseado no tipo de erro
@@ -189,7 +208,8 @@ apiClient.interceptors.response.use(
         toast.error(`Requisição inválida: ${message}`);
         break;
       case 404:
-        toast.error("Recurso não encontrado");
+        // 404 é comum (endpoint pode não existir), não mostra toast
+        console.warn(`[API] 404 em ${endpoint}`);
         break;
       case 500:
         toast.error("Erro no servidor. Tente novamente.");

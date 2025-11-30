@@ -1,3 +1,6 @@
+// ARQUIVO: src/app/page.tsx
+// Exemplo de como integrar o componente SugarcaneQuotation
+
 "use client";
 
 import { useState } from "react";
@@ -20,6 +23,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWeather } from "@/hooks/useWeather";
 import { useInsightsTags } from "@/hooks/useInsights";
+
+// ✅ ADICIONE ESTA IMPORTAÇÃO
+import { SugarcaneQuotation } from "@/components/quotation/SugarcaneQuotation";
+
 import type { LocationSearchResult } from "@/types/location";
 
 export default function Home() {
@@ -30,7 +37,6 @@ export default function Home() {
   );
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Busca dados climáticos quando localização selecionada
   const {
     data: weatherData,
     isLoading: isLoadingWeather,
@@ -44,12 +50,11 @@ export default function Home() {
     enabled: !!location,
   });
 
-  // Extrai tags dos insights (para filtros)
-  const availableTags = useInsightsTags([]); // TODO: passar insights reais
+  const availableTags = useInsightsTags([]);
 
   const handleLocationSelect = (selectedLocation: LocationSearchResult) => {
     setLocation(selectedLocation);
-    setShowInsightForm(false); // Fecha form ao trocar localização
+    setShowInsightForm(false);
   };
 
   const handleTagToggle = (tag: string) => {
@@ -58,7 +63,9 @@ export default function Home() {
     );
   };
 
-  // Estado: Nenhuma localização selecionada (Hero)
+  // ============================================
+  // ESTADO: Nenhuma localização selecionada (Hero)
+  // ============================================
   if (!location) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -142,7 +149,9 @@ export default function Home() {
     );
   }
 
-  // Estado: Localização selecionada (Dashboard)
+  // ============================================
+  // ESTADO: Localização selecionada (Dashboard)
+  // ============================================
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -205,6 +214,10 @@ export default function Home() {
 
                 {/* Forecast Charts */}
                 <ForecastChart forecast={weatherData.forecast} />
+
+                <div className="pt-6">
+                  <SugarcaneQuotation />
+                </div>
 
                 {/* Insights Section (Mobile Only) */}
                 <div className="lg:hidden space-y-6">

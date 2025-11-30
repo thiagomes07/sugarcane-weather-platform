@@ -5,7 +5,7 @@ import logging
 
 from app.config import settings
 from app.database.mongodb import connect_to_mongo, close_mongo_connection
-from app.api.routes import health, locations, weather, insights, news
+from app.api.routes import health, locations, weather, insights, news, quotation
 from app.api.middlewares.error_handler import error_handler_middleware
 
 # Configurar logging
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 # Criar aplicação
 app = FastAPI(
-    title="Cana Clima API",
+    title="Cana Data API",
     description="Sistema de monitoramento climático para produtores de cana-de-açúcar",
     version="1.0.0",
     lifespan=lifespan
@@ -48,7 +48,10 @@ app.add_middleware(
 app.middleware("http")(error_handler_middleware)
 
 # Rotas
+# Health check (sem prefixo)
 app.include_router(health.router, tags=["Health"])
+
+# Rotas com prefixo /api/v1
 app.include_router(
     locations.router,
     prefix=f"/api/{settings.API_VERSION}",
@@ -70,12 +73,31 @@ app.include_router(
     tags=["News"]
 )
 
+app.include_router(
+    quotation.router,
+    prefix=f"/api/{settings.API_VERSION}",
+    tags=["Quotation"]
+)
+
+app.include_router(
+    quotation.router,
+    tags=["Quotation (Root)"]
+)
+
 @app.get("/")
 async def root():
     return {
-        "message": "Cana Clima API",
+        "message": "Cana Data API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "endpoints": {
+            "health": "/health",
+            "weather": "/api/v1/weather",
+            "locations": "/api/v1/locations/search",
+            "insights": "/api/v1/insights",
+            "news": "/api/v1/news",
+            "quotation": "/quotation or /api/v1/quotation"
+        }
     }
 
 if __name__ == "__main__":

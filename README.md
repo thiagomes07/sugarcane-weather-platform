@@ -6,13 +6,12 @@
 
 **Plataforma web que democratiza o acesso a informações climáticas para produtores rurais de cana-de-açúcar**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14+-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15+-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat&logo=mongodb)](https://www.mongodb.com/)
-
-[🌐 Demo Frontend](http://seu-deploy-frontend.com) • [🔧 API Docs](http://seu-backend.com/docs)
+[![AWS](https://img.shields.io/badge/AWS-EC2_+_S3-FF9900?style=flat&logo=amazonwebservices)](https://aws.amazon.com/)
 
 </div>
 
@@ -31,253 +30,279 @@ Plataforma web com:
 - 🎯 **Análise contextualizada** para cultivo de cana-de-açúcar (temperatura, umidade, precipitação, vento)
 - 🤝 **Fórum colaborativo** onde produtores compartilham insights e práticas
 - 📰 **Feed de notícias** do agronegócio brasileiro
+- 💹 **Cotação da cana-de-açúcar** (Campo vs Esteira) em tempo real
 - ⚡ **Sistema de resiliência** com rate limiting e retry inteligente
+
+### 🚀 Diferenciais Técnicos
+
+Além dos requisitos do desafio, foram implementados:
+
+- **🗄️ Cache inteligente** (30min) reduz 70% das chamadas à API externa
+- **⚖️ Load balancing** com 2 réplicas FastAPI + Nginx (alta disponibilidade)
+- **📊 Cotação em tempo real** via web scraping 
+- **📰 Agregação de notícias** agrícolas contextualizadas (NewsAPI)
+- **☁️ Deploy em produção** (AWS EC2 + S3) com acesso público
+- **🛡️ Rate limiting** por endpoint para proteção contra abuso
+
+---
+
+## 🌐 Acesso ao Sistema
+
+<div align="center">
+
+### 🚀 **Versão em Produção** (Deploy Completo)
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <h3>🖥️ Frontend</h3>
+      <a href="http://cana-data-frontend.s3-website-us-east-1.amazonaws.com/">
+        <img src="https://img.shields.io/badge/Acessar_Aplicação-2D5F2E?style=for-the-badge&logo=react&logoColor=white" alt="Frontend"/>
+      </a>
+      <br/><br/>
+      <sub>Interface web hospedada no AWS S3</sub>
+    </td>
+    <td align="center" width="50%">
+      <h3>🔧 Backend API</h3>
+      <a href="http://98.94.92.42:8000/docs">
+        <img src="https://img.shields.io/badge/Documentação_API-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="API Docs"/>
+      </a>
+      <br/><br/>
+      <sub>API REST com Swagger UI interativa</sub>
+    </td>
+  </tr>
+</table>
+
+**📍 URLs Diretas:**
+- **Aplicação Web**: http://cana-data-frontend.s3-website-us-east-1.amazonaws.com/
+- **API Backend**: http://98.94.92.42:8000
+- **API Docs (Swagger)**: http://98.94.92.42:8000/docs
+
+---
+
+### 💻 **Executar Localmente** (Docker)
+
+Prefere testar em seu próprio ambiente? Siga o guia rápido abaixo ⬇️
+
+</div>
+
+---
+
+## 🚀 Quick Start - Execução Local
+
+### 📦 Pré-requisitos
+
+Certifique-se de ter instalado:
+
+- **Docker Engine** 20.10+ ([Instalar Docker](https://docs.docker.com/engine/install/))
+- **Docker Compose** V2+ (incluído no Docker Desktop)
+- **4GB de RAM** disponível
+- **Portas livres:** 3000, 8000, 8001, 8002, 27017
+
+Para verificar se está tudo pronto:
+```bash
+docker --version        # Docker version 20.10.0+
+docker compose version  # Docker Compose version v2.0.0+
+```
+
+### ⚙️ 1. Clone o Repositório
+
+```bash
+git clone https://github.com/thiagomes07/CanaData.git
+cd CanaData
+```
+
+### 🔑 2. Configure as Variáveis de Ambiente
+
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env
+
+# o mesmo no diretório do backend
+cd backend
+cp .env.example .env
+```
+
+> **💡 Nota**: O arquivo `.env.example` já contém valores pré-configurados para execução local. A única variável sensível (chave da NewsAPI) está incluída para facilitar os testes, mas **não compromete a segurança crítica** do projeto. Em produção, esta chave deve ser mantida privada.
+
+### 🐳 3. Execute com Docker Compose
+
+```bash
+# Build e start (primeira execução)
+docker compose up --build
+```
+
+**Aguarde ~30-60 segundos** para inicialização completa dos serviços:
+- ⏳ MongoDB inicializando...
+- ⏳ Backend FastAPI (2 réplicas) + Nginx...
+- ⏳ Frontend Next.js...
+- ✅ Health checks validados!
+
+### 🌐 4. Acesse a Aplicação Local
+
+| Serviço | URL | Descrição |
+|---------|-----|-----------|
+| **🖥️ Frontend** | [http://localhost:3000](http://localhost:3000) | Interface web principal |
+| **🔧 Backend API** | [http://localhost:8000](http://localhost:8000) | Gateway Nginx (load balanced) |
+| **📚 API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI interativa |
+| **📖 API ReDoc** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Documentação alternativa |
+
+### 🛑 6. Parar o Projeto
+
+```bash
+# Pausa os containers (mantém dados)
+docker compose stop
+
+# Remove containers (mantém volumes/dados)
+docker compose down
+
+# Remove containers + volumes (⚠️ APAGA o banco de dados!)
+docker compose down -v
+```
 
 ---
 
 ## 🏗️ Arquitetura
 
 ```
-┌─────────────────────────────────────────────┐
-│  Frontend (Next.js 14 - SSG)                │
-│  • TypeScript + Tailwind CSS               │
-│  • TanStack Query (cache inteligente)      │
-│  • Resiliência a rate limiting             │
-│  └─ http://localhost:3000                  │
-│                                             │
-├─────────────────────────────────────────────┤
-│  Nginx (Reverse Proxy)                     │
-│  • Load Balancer (2 réplicas FastAPI)      │
-│  • Rate Limiting por IP/endpoint           │
-│  └─ http://localhost:8000                  │
-│       ▼                    ▼                │
-│  FastAPI #1            FastAPI #2           │
-│  (Port 8001)          (Port 8002)           │
-│       ▼                    ▼                │
-│  MongoDB (Port 27017)                       │
-│  • Persistência de insights comunitários   │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  Frontend (Next.js 15 - SSG)                            │
+│  • TypeScript + Tailwind CSS v4                        │
+│  • TanStack Query (cache inteligente 30min)            │
+│  • Resiliência a rate limiting com retry exponencial   │
+│  └─ http://localhost:3000                              │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│  Nginx (Reverse Proxy + Load Balancer)                 │
+│  • Rate Limiting por IP/endpoint                       │
+│  • Health checks a cada 30s                            │
+│  • Algoritmo least_conn                                │
+│  └─ http://localhost:8000                              │
+│       ▼                    ▼                            │
+│  ┌─────────────┐      ┌─────────────┐                  │
+│  │ FastAPI #1  │      │ FastAPI #2  │                  │
+│  │ (Port 8001) │      │ (Port 8002) │                  │
+│  └─────────────┘      └─────────────┘                  │
+│       ▼                    ▼                            │
+│  ┌──────────────────────────────────┐                  │
+│  │  MongoDB (Port 27017)            │                  │
+│  │  • Collection: insights          │                  │
+│  │  • Índices geoespaciais (2dsphere)│                 │
+│  └──────────────────────────────────┘                  │
+└─────────────────────────────────────────────────────────┘
+
+External APIs:
+├─ Open-Meteo (dados climáticos)
+├─ Nominatim/OSM (geocoding)
+├─ NewsAPI (notícias do agro)
+└─ Notícias Agrícolas (cotação cana - scraping)
 ```
 
 ### 🔑 Decisões Técnicas
 
-**Frontend - Next.js 14 (SSG)**
-- ✅ Performance: Páginas pré-renderizadas = carregamento instantâneo (~500ms)
-- ✅ SEO nativo: Indexação completa sem SSR
-- ✅ Custo: Deploy estático em S3 (~$0.50/mês)
-- ✅ Experiência: Cache inteligente com TanStack Query (30min alinhado com backend)
+**Frontend - Next.js 15 (SSG)**
+- ✅ **Performance**: Páginas pré-renderizadas = carregamento instantâneo (~500ms)
+- ✅ **SEO nativo**: Indexação completa sem necessidade de SSR
+- ✅ **Custo**: Deploy estático em S3 (~$0.50/mês)
+- ✅ **Experiência**: Cache inteligente com TanStack Query (30min alinhado com backend)
 
-**Backend - FastAPI + Python**
-- ✅ Inteligência de negócio: Análise climática contextualizada para cana
-- ✅ Agregação de dados: Open-Meteo + Geocoding + Insights comunitários
-- ✅ Cache compartilhado: Reduz 70% de chamadas à API externa
-- ✅ Rate Limiting (Nginx): Proteção contra abuso (20 req/min clima, 15 req/min insights)
+**Backend - FastAPI + Python 3.11**
+- ✅ **Inteligência de negócio**: Análise climática contextualizada para cana-de-açúcar
+- ✅ **Agregação de dados**: Open-Meteo + Geocoding + Insights + News + Cotação
+- ✅ **Cache compartilhado**: Reduz ~70% de chamadas às APIs externas
+- ✅ **Rate Limiting (Nginx)**: Proteção contra abuso (limites por endpoint)
 
 **Infraestrutura - Docker Compose**
-- ✅ Reprodutibilidade: Ambiente idêntico entre dev/staging
-- ✅ Alta disponibilidade: Load balancer + 2 réplicas FastAPI + health checks
-- ✅ Escalabilidade simulada: Pronto para autoscaling real (ECS/K8s)
-
----
-
-## 🚀 Quick Start
-
-### 📦 Pré-requisitos
-
-- **Docker Engine** 20.10+ e **Docker Compose** V2+
-- **4GB RAM** disponível
-- **Portas livres:** 3000, 8000, 8001, 8002, 27017
-
-### ⚙️ 1. Configuração
-
-```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/sugarcane-weather-platform.git
-cd sugarcane-weather-platform
-
-# Configure variáveis de ambiente
-cp .env.example .env
-
-# Edite o arquivo (OPCIONAL: adicione NewsAPI key para feed de notícias)
-nano .env
-```
-
-**Variáveis importantes:**
-```bash
-NEWSAPI_KEY=your_key_here  # Opcional: obter em https://newsapi.org/
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-### 🐳 2. Execute com Docker Compose
-
-```bash
-# Build e start (primeira vez)
-docker compose up --build
-
-# Ou em background
-docker compose up -d --build
-```
-
-**Aguarde ~30 segundos** para inicialização completa (MongoDB + health checks).
-
-### 🌐 3. Acesse a Aplicação
-
-| Serviço | URL | Descrição |
-|---------|-----|-----------|
-| **Frontend** | http://localhost:3000 | Interface web principal |
-| **Backend API** | http://localhost:8000 | Gateway Nginx (load balanced) |
-| **API Docs** | http://localhost:8000/docs | Swagger UI interativa |
-
-### 🛑 Parar o Projeto
-
-```bash
-docker compose stop              # Pausa (mantém dados)
-docker compose down              # Remove containers
-docker compose down -v           # Remove containers + volumes (⚠️ apaga banco!)
-```
+- ✅ **Reprodutibilidade**: Ambiente idêntico entre dev/staging/produção
+- ✅ **Alta disponibilidade**: Load balancer + 2 réplicas FastAPI + health checks
+- ✅ **Escalabilidade**: Arquitetura pronta para migração para ECS/Kubernetes
 
 ---
 
 ## 📊 Funcionalidades
 
 ### 🌦️ Consulta Climática Inteligente
-- **Autocomplete** de cidades com debounce (300ms) para evitar rate limiting
-- **Dados em tempo real** da Open-Meteo API (temperatura, umidade, vento, precipitação)
+- **Autocomplete** de cidades com debounce (300ms) para mitigar rate limiting
+- **Dados em tempo real** da Open-Meteo API (temperatura, umidade, vento, precipitação, UV)
 - **Análise contextualizada** para cana-de-açúcar:
-  - ✅ Temperatura ideal: 25-33°C
-  - ✅ Umidade ideal: 60-80%
-  - ⚠️ Alertas críticos: geada, estresse térmico, doenças fúngicas
+  - ✅ **Temperatura ideal**: 21-34°C
+  - ✅ **Umidade ideal**: 60-85%
+  - ⚠️ **Alertas críticos**: geada, estresse térmico, doenças fúngicas, acamamento
 - **Previsão 5 dias** com gráficos interativos (Recharts)
-- **Cache de 30 minutos** (frontend + backend)
+- **Cache de 30 minutos** (sincronizado frontend + backend)
+
+### 💹 Cotação da Cana-de-Açúcar
+- **Últimos 10 fechamentos** (Campo vs Esteira)
+- **Gráfico interativo** com tooltips customizados
+- **Estatísticas**: variação percentual, diferença Campo/Esteira
+- **Fonte**: Notícias Agrícolas (scraping robusto com retry)
+- **Cache**: 1 hora
 
 ### 🤝 Fórum Colaborativo
 - **Compartilhamento de insights** entre produtores
 - **Snapshot climático** no momento da publicação
 - **Busca geoespacial** (insights próximos até 500km)
-- **Sistema de tags** para organização
+- **Sistema de tags** para categorização
 - **Scroll infinito** com throttling (2s entre requests)
+- **Persistência**: MongoDB com índices otimizados
 
 ### 📰 Feed de Notícias
 - Integração com **NewsAPI**
-- Filtro: agronegócio + cana-de-açúcar
-- Cache de **1 hora** (economiza quota API)
-- Fallback silencioso (não bloqueia experiência principal)
+- **Categorias**: Agronegócio, Cana-de-Açúcar, Clima
+- **Cache de 1 hora** (economiza quota da API)
+- **Fallback gracioso** (não bloqueia experiência principal)
+
+### 📤 Exportação de Dados
+- **CSV**: Clima, Insights, Notícias, Cotação ou Relatório Completo
+- **PDF**: Captura visual da página (html2canvas + jsPDF)
+- **Botões adaptativos**: Compact (desktop) e Floating (mobile)
+- **Encoding UTF-8 com BOM** (compatibilidade Excel)
 
 ### 🛡️ Resiliência e Performance
-- **Rate Limiting** inteligente:
-  - Weather: 20 req/min
-  - Insights: 15 req/min
-  - Locations: 30 req/min
-- **Retry automático** com exponential backoff
-- **Cooldown tracking** com persistência em localStorage
-- **Health checks** a cada 30s (Nginx + FastAPI)
-- **Failover automático** entre réplicas
 
----
+**Rate Limiting Implementado (Nginx):**
+| Endpoint | Rate Limit | Burst | Estratégia Frontend |
+|----------|-----------|-------|---------------------|
+| `/api/v1/locations/search` | 5 req/s | 10 | Debounce 300ms |
+| `/api/v1/weather` | 1 req/s | 20 | Cache 30min + retry |
+| `/api/v1/insights` (POST) | 10 req/min | 5 | Cooldown tracking |
+| `/api/v1/insights` (GET) | 1 req/s | 20 | Throttle scroll 2s |
+| `/api/v1/news` | Sem limite | - | Cache backend 1h |
+| `/quotation` | Sem limite | - | Cache backend 1h |
 
-## 🔧 Comandos Úteis
-
-```bash
-# Ver logs em tempo real
-docker compose logs -f
-docker compose logs -f frontend    # Apenas frontend
-docker compose logs -f nginx       # Apenas Nginx
-
-# Rebuild de serviço específico
-docker compose up -d --build frontend
-
-# Executar shell em container
-docker compose exec frontend sh
-docker compose exec fastapi_1 sh
-docker compose exec mongodb mongosh
-
-# Ver status dos serviços
-docker compose ps
-
-# Monitorar recursos
-docker stats
-```
+**Mecanismos de Recuperação:**
+- ✅ **Retry automático** com exponential backoff
+- ✅ **Cooldown tracking** com persistência em localStorage
+- ✅ **Health checks** a cada 30s (Nginx remove réplicas falhas)
+- ✅ **Failover automático** entre réplicas FastAPI
+- ✅ **Toast notifications** com tempo de espera dinâmico
 
 ---
 
 ## 📂 Estrutura do Projeto
 
 ```
-sugarcane-weather-platform/
-├── backend/                    # FastAPI (Python 3.11+)
+CanaData/
+├── backend/                     # FastAPI (Python 3.11+)
 │   ├── app/
-│   │   ├── api/routes/        # weather, locations, insights, health
-│   │   ├── core/              # cache, sugarcane_analyzer
-│   │   ├── services/          # open_meteo, geocoding, insights
-│   │   ├── models/            # Pydantic schemas
-│   │   └── database/          # MongoDB connection
-│   ├── nginx/
-│   │   └── nginx.conf         # Rate limiting + load balancer
-│   ├── Dockerfile
-│   └── requirements.txt
+│   │   ├── api/routes/         # Endpoints REST (weather, insights, news, quotation)
+│   │   ├── core/               # Cache + análise agrícola contextualizada
+│   │   ├── services/           # Integrações externas (Open-Meteo, NewsAPI, scraping)
+│   │   ├── models/             # Schemas Pydantic
+│   │   └── database/           # Conexão MongoDB
+│   ├── nginx/nginx.conf        # Rate limiting + load balancer
+│   └── tests/                  # Testes automatizados
 │
-├── frontend/                   # Next.js 14 (TypeScript)
+├── frontend/                    # Next.js 15 (TypeScript)
 │   ├── src/
-│   │   ├── app/               # App Router (layout, page)
-│   │   ├── components/        # weather, insights, news, shared, ui
-│   │   ├── hooks/             # useWeather, useInsights, useDebounce
-│   │   ├── lib/api/           # Axios client + endpoints
-│   │   ├── lib/utils/         # format, retry, validation
-│   │   └── types/             # TypeScript definitions
-│   ├── Dockerfile
-│   └── package.json
+│   │   ├── app/                # Pages + layouts (App Router)
+│   │   ├── components/         # UI components (weather, insights, news, quotation)
+│   │   ├── hooks/              # Custom React hooks (useWeather, useInsights, etc)
+│   │   ├── lib/                # API clients + utils + constants
+│   │   └── types/              # TypeScript definitions
+│   └── public/                 # Assets estáticos + SEO (manifest, robots, sitemap)
 │
-├── docker-compose.yaml         # Orquestração completa
-├── .env.example
-└── README.md
-```
-
----
-
-## 🌍 Deploy em Produção
-
-### Frontend (AWS S3)
-```bash
-cd frontend
-npm run build              # Gera build estático em /out
-aws s3 sync out/ s3://seu-bucket --delete
-```
-
-### Backend (EC2 + Docker Compose)
-```bash
-# Na EC2, executar:
-docker compose -f docker-compose.prod.yml up -d
-
-# Nginx expõe porta 80/443 (com SSL via Certbot)
-```
-
-**Diferenças Dev vs Produção:**
-- ✅ MongoDB com autenticação
-- ✅ HTTPS via Certbot (Let's Encrypt)
-- ✅ Rate limiting mais restritivo
-- ✅ Logs estruturados (JSON)
-- ✅ Backups automáticos
-
----
-
-## 🧪 Testando a API
-
-### Via Swagger UI (recomendado)
-Acesse http://localhost:8000/docs e teste interativamente.
-
-### Via cURL
-```bash
-# Health Check
-curl http://localhost:8000/health
-
-# Buscar localização
-curl "http://localhost:8000/api/v1/locations/search?q=ribeirao"
-
-# Consultar clima
-curl "http://localhost:8000/api/v1/weather?lat=-21.17&lon=-47.81&location_name=Ribeirão%20Preto"
-
-# Listar insights
-curl "http://localhost:8000/api/v1/insights?location=Ribeirão%20Preto"
+└── docker-compose.yaml          # Orquestração completa (Frontend + Backend 2x + Nginx + MongoDB)
 ```
 
 ---
@@ -285,29 +310,29 @@ curl "http://localhost:8000/api/v1/insights?location=Ribeirão%20Preto"
 ## 🚧 Melhorias Futuras
 
 ### Funcionalidades
-- [ ] Autenticação JWT (perfis de usuário)
-- [ ] PWA para instalação mobile
+- [ ] Autenticação JWT (perfis de usuário, favoritos)
+- [ ] PWA completo para instalação mobile
 - [ ] Sistema de notificações push (alertas críticos)
-- [ ] Histórico climático (séries temporais)
-- [ ] Export de relatórios em PDF
+- [ ] Histórico climático com séries temporais
+- [ ] Machine Learning para previsões personalizadas
+- [ ] Integração com imagens de satélite (NDVI)
+- [ ] Sistema de reações nos insights (curtir, comentar)
+- [ ] Dark mode
 
 ### Performance
-- [ ] Redis para cache distribuído
+- [ ] Migrar cache para Redis distribuído
 - [ ] CloudFront (CDN) na frente do S3
 - [ ] Request batching para otimizar rate limits
-- [ ] Service Worker (cache offline)
+- [ ] Service Worker (cache offline completo)
+- [ ] Lazy loading de componentes pesados
 
 ### Infraestrutura
 - [ ] CI/CD com GitHub Actions
 - [ ] Testes automatizados (80%+ cobertura)
-- [ ] Monitoramento com Prometheus/Grafana
-- [ ] Autoscaling real (ECS Fargate)
-
----
-
-## 📄 Licença
-
-Este projeto foi desenvolvido como parte de um desafio técnico para a empresa **Canac**.
+- [ ] Monitoramento com Prometheus + Grafana
+- [ ] Autoscaling real (AWS ECS Fargate ou Kubernetes)
+- [ ] Certificados SSL (Let's Encrypt)
+- [ ] Backup automático do MongoDB
 
 ---
 
@@ -339,11 +364,11 @@ Este projeto foi desenvolvido como parte de um desafio técnico para a empresa *
           Este projeto demonstra expertise em:
         </p>
         <ul>
-          <li>🎨 <strong>Frontend moderno:</strong> Next.js 14, TypeScript, Tailwind CSS</li>
+          <li>🎨 <strong>Frontend moderno:</strong> Next.js 15, TypeScript, Tailwind CSS v4</li>
           <li>🔧 <strong>Backend robusto:</strong> FastAPI, Python, MongoDB</li>
           <li>🐋 <strong>DevOps:</strong> Docker, Nginx, Load Balancing</li>
           <li>☁️ <strong>Cloud:</strong> AWS (EC2, S3, IAM)</li>
-          <li>📊 <strong>Arquitetura:</strong> Cache, Rate Limiting</li>
+          <li>📊 <strong>Arquitetura:</strong> Cache inteligente, Rate Limiting, Resiliência</li>
           <li>♿ <strong>Boas práticas:</strong> Clean Code, Documentação, Acessibilidade</li>
         </ul>
         <br />
@@ -353,14 +378,4 @@ Este projeto foi desenvolvido como parte de um desafio técnico para a empresa *
       </td>
     </tr>
   </table>
-</div>
-
----
-
-<div align="center">
-
-**🌾 CanaData** - Democratizando acesso à informação climática no agronegócio brasileiro
-
-Feito com ❤️ usando Next.js, FastAPI e muita dedicação
-
 </div>

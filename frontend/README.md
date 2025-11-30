@@ -22,11 +22,13 @@ Acesse: http://localhost:3000
 
 ## 1. Visão Geral
 
-Aplicação web construída com **Next.js 14+ usando Static Site Generation (SSG)** que oferece:
+Aplicação web construída com **Next.js 15+ usando Static Site Generation (SSG)** que oferece:
 
 - **Consulta climática inteligente** com autocomplete de localização e dados contextualizados para cultivo de cana-de-açúcar
 - **Fórum de conhecimento colaborativo** onde produtores compartilham insights e práticas
-- **Feed de notícias** do agronegócio integrado com NewsAPI
+- **Feed de notícias** do agronegócio via backend proxy
+- **Cotação da cana-de-açúcar** (Campo vs Esteira)
+- **Exportação de dados** em CSV e PDF
 - **Resiliência a rate limiting** com retry inteligente e feedback ao usuário
 
 ---
@@ -51,51 +53,36 @@ Aplicação web construída com **Next.js 14+ usando Static Site Generation (SSG
 - Conteúdo que muda a cada request baseado no usuário
 - API routes que necessitam segredos server-side
 
-**Nossa realidade:** Toda interação dinâmica (clima, insights, notícias) ocorre via API calls client-side após carregamento inicial. Não há rotas protegidas nem necessidade de computação server-side em runtime.
+**Nossa realidade:** Toda interação dinâmica (clima, insights, notícias, cotação) ocorre via API calls client-side após carregamento inicial.
 
-### 2.2 Por que S3 (sem CloudFront)?
+### 2.2 Deployments
 
-**S3 Simples:**
-- Hospedagem de site estático nativa do AWS
-- Custo irrisório para MVP (~$0.50-$2/mês)
-- Alta disponibilidade (99.99% SLA)
-- Setup minimalista: bucket + política pública
+**Desenvolvimento (Docker Compose):**
+- Frontend roda `npm run dev` em container para integração local
+- Hot reload habilitado
+- Acesso via `http://localhost:3000`
 
-**CloudFront seria útil para:**
-- Latência global reduzida (CDN em edge locations)
-- Invalidação de cache
-- HTTPS customizado
-
-**Decisão:** Para o MVP validando o produto, S3 puro é suficiente. CloudFront pode ser adicionado posteriormente sem refatoração do código.
-
-### 2.3 Por que Docker Compose se o Front é Estático?
-
-**Justificativa:**
-- Atende requisito do desafio: "aplicação deve funcionar com `docker compose up`"
-- Facilita validação do avaliador com ambiente reproduzível
-- Permite testar integração front-back localmente
-
-**Separação Dev vs Produção:**
-- **Desenvolvimento (Docker Compose):** Frontend roda `npm run dev` em container para integração local
-- **Produção:** Build SSG → Upload para S3 (sem container)
-
-Docker Compose é ferramenta de desenvolvimento, não de deploy do frontend em produção.
+**Produção:**
+- Build SSG → Upload para S3
+- Sem container em produção
+- Deploy atual: http://cana-data-frontend.s3-website-us-east-1.amazonaws.com/
 
 ---
 
 ## 3. Stack Tecnológica
 
 ```
-- Next.js 14+ (App Router)
+- Next.js 15+ (App Router)
 - TypeScript
-- Tailwind CSS
+- Tailwind CSS v4
 - Shadcn/ui (componentes base)
 - React Hook Form + Zod (validação)
 - TanStack Query (cache e estado assíncrono)
 - Axios (HTTP client)
 - Lucide Icons
-- React Hot Toast (notificações)
+- Sonner (toast notifications)
 - Recharts (gráficos)
+- jsPDF + html2canvas (exportação PDF)
 ```
 
 ---
@@ -107,111 +94,245 @@ frontend/
 ├── public/
 │   ├── robots.txt              # SEO - configuração para crawlers
 │   ├── sitemap.xml             # SEO - mapa do site
+│   ├── manifest.json           # PWA manifest
 │   └── images/
-│       ├── logo.svg
-│       └── og-image.jpg        # Open Graph para redes sociais
 │
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx          # Root layout com meta tags SEO
-│   │   ├── page.tsx            # Página inicial
+│   │   ├── page.tsx            # Página inicial (dashboard)
 │   │   ├── not-found.tsx       # 404 customizada
-│   │   └── globals.css         # Estilos globais + Tailwind
+│   │   ├── providers.tsx       # TanStack Query Provider
+│   │   └── globals.css         # Estilos globais + Tailwind v4
 │   │
 │   ├── components/
-│   │   ├── ui/                 # Shadcn/ui (button, card, input, badge, skeleton, toast)
+│   │   ├── ui/                 # Shadcn/ui base components
 │   │   ├── layout/             # Header, Footer, Container
 │   │   ├── weather/            # LocationSearch, WeatherCard, SugarcaneAnalysis, 
 │   │   │                       # WeatherMetrics, ForecastChart, WeatherSkeleton
 │   │   ├── insights/           # InsightsList, InsightCard, InsightForm, 
 │   │   │                       # InsightFilters, EmptyState
 │   │   ├── news/               # NewsFeed, NewsCard, NewsSkeleton
-│   │   └── shared/             # LoadingSpinner, ErrorMessage, StatusBadge, RateLimitWarning
+│   │   ├── quotation/          # SugarcaneQuotation
+│   │   └── shared/             # LoadingSpinner, ErrorMessage, StatusBadge, 
+│   │                           # RateLimitWarning, ExportButtons
 │   │
 │   ├── lib/
-│   │   ├── api/                # client.ts, weather.ts, locations.ts, 
-│   │   │                       # insights.ts, news.ts
-│   │   ├── utils/              # format.ts, weather.ts, validation.ts, retry.ts
+│   │   ├── api/                # HTTP clients (client.ts, weather.ts, locations.ts, 
+│   │   │                       # insights.ts, news.ts, quotation.ts)
+│   │   ├── utils/              # format.ts, weather.ts, validation.ts, retry.ts, export.ts
 │   │   └── constants/          # weather.ts, sugarcane.ts, errors.ts
 │   │
-│   ├── hooks/                  # useWeather, useLocations, useInsights, 
-│   │                           # useNews, useDebounce, useRateLimitHandler
+│   ├── hooks/                  # Custom React Hooks
+│   │   ├── useWeather.ts       # Dados climáticos
+│   │   ├── useLocations.ts     # Autocomplete de localização
+│   │   ├── useInsights.ts      # CRUD de insights
+│   │   ├── useNews.ts          # Feed de notícias
+│   │   ├── useQuotation.ts     # Cotação da cana
+│   │   ├── useDebounce.ts      # Debounce para inputs
+│   │   ├── useExport.ts        # Exportação CSV/PDF
+│   │   └── useRateLimitHandler.ts  # Controle de rate limiting
 │   │
-│   ├── types/                  # weather.ts, location.ts, insight.ts, news.ts
+│   ├── types/                  # TypeScript interfaces
+│   │   ├── weather.ts
+│   │   ├── location.ts
+│   │   ├── insight.ts
+│   │   ├── news.ts
+│   │   └── quotation.ts
 │   │
 │   └── config/
 │       └── env.ts              # Validação de variáveis de ambiente
 │
-├── .env.local
-├── next.config.js              # output: 'export' para SSG
-├── tailwind.config.js
+├── .env.local                  # Variáveis de ambiente (local)
+├── next.config.ts              # output: 'export' para SSG
+├── tailwind.config.js          # Tailwind v4 config
 ├── tsconfig.json
 └── Dockerfile
 ```
 
 ---
 
-## 5. Fluxos Principais
+## 5. Variáveis de Ambiente
 
-### 5.1 Consulta Climática
+```bash
+# .env.local (desenvolvimento)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# .env (produção)
+NEXT_PUBLIC_API_URL=http://ec2-xx-xxx-xxx-xx.compute.amazonaws.com:8000
+```
+
+**Nota:** A chave do NewsAPI não é mais necessária no frontend, pois o backend faz o proxy das requisições.
+
+---
+
+## 6. Fluxos Principais
+
+### 6.1 Consulta Climática
 
 ```
 1. Usuário digita cidade → Debounce 300ms → GET /api/v1/locations/search?q=...
+   - Validação mínima: 3 caracteres
    - Rate limit: 5 req/s com burst de 10
    - Se 429: Aguarda 2s → Retry automático
+   
 2. Exibe dropdown com sugestões (nome, estado, país)
+
 3. Usuário seleciona → GET /api/v1/weather?lat=...&lon=...&location_name=...
    - Rate limit: 1 req/s com burst de 20
-   - Se 429: Toast "Muitas consultas. Aguarde alguns segundos..." → Retry após 3s
+   - Se 429: Toast "Muitas consultas. Aguarde..." → Retry após 3s
+   
 4. Durante loading: Skeleton screens nas seções
-5. Sucesso: Renderiza WeatherCard + Metrics + SugarcaneAnalysis + Forecast + Insights
+
+5. Sucesso: Renderiza:
+   - WeatherCard (temperatura, condição, sensação térmica)
+   - WeatherMetrics (umidade, vento, pressão, visibilidade)
+   - SugarcaneAnalysis (análise agronômica completa)
+   - ForecastChart (gráficos de temperatura e precipitação)
+   - SugarcaneQuotation (cotação Campo vs Esteira)
+   - InsightsList (insights da comunidade para essa localização)
+   - NewsFeed (notícias do agronegócio)
+   
 6. Habilita botão "Compartilhar Insight"
+
 7. Erro: ErrorMessage com "Tentar Novamente"
 ```
 
-### 5.2 Compartilhamento de Insights
+### 6.2 Compartilhamento de Insights
 
 ```
 1. Pré-requisito: Clima consultado (botão habilitado)
+
 2. Modal abre com localização e clima pré-preenchidos (readonly)
-3. Usuário preenche: Nome, Conteúdo (10-1000 chars), Tags (max 5)
+
+3. Usuário preenche:
+   - Nome (2-100 caracteres)
+   - Função (opcional)
+   - Conteúdo (10-1000 caracteres)
+   - Tags (máximo 5)
+   
 4. Validação em tempo real (Zod)
+
 5. Submit → POST /api/v1/insights
    - Rate limit: 10 req/min com burst de 5
-   - Se 429: Toast "Limite de publicações atingido. Aguarde 1 minuto." → Desabilita botão por 60s
+   - Se 429: Toast "Limite atingido. Aguarde 1 minuto." → Desabilita botão por 60s
+   
 6. Sucesso: Modal fecha + Toast + Lista atualiza (cache invalidado)
+
 7. Erro: Toast + formulário mantém dados
 ```
 
-### 5.3 Visualização de Insights
+### 6.3 Visualização de Insights
 
 ```
 1. Carregamento automático após consulta de clima
+
 2. GET /api/v1/insights?location=...&limit=20
    - Rate limit: 1 req/s (compartilhado com endpoints gerais)
+   
 3. Cards ordenados por data (mais recentes primeiro)
-4. Cada card: autor, localização, snapshot climático, conteúdo, tags, data
+
+4. Cada card mostra:
+   - Avatar do autor (iniciais com cor)
+   - Nome e função
+   - Localização e data
+   - Conteúdo do insight
+   - Tags
+   - Snapshot climático (temperatura, umidade, condição)
+   
 5. Scroll infinito: Carrega +20 ao chegar no final
    - Throttling: Mínimo 2s entre requests de paginação
-6. Filtros: Por tags e ordenação
+   
+6. Filtros: Por tags e ordenação (recentes/populares)
+
 7. Estado vazio: "Seja o primeiro a compartilhar..."
 ```
 
-### 5.4 Feed de Notícias
+### 6.4 Feed de Notícias
 
 ```
 1. Carregamento automático no mount da página
-2. NewsAPI: q="agronegócio OR cana-de-açúcar", language=pt
-3. Cache de 1 hora (TanStack Query)
-4. Grid de cards: imagem, título, fonte, data, link externo
-5. Erro: Seção desaparece silenciosamente (não bloqueia experiência principal)
+
+2. Backend proxy: GET /api/v1/news?category=SUGARCANE&page_size=6
+   - Cache backend: 1 hora
+   
+3. Grid de cards:
+   - Imagem (thumbnail)
+   - Fonte
+   - Título
+   - Descrição (opcional)
+   - Data relativa ("2 horas atrás")
+   - Link externo
+   
+4. Erro: Seção desaparece silenciosamente (não bloqueia experiência principal)
+```
+
+### 6.5 Cotação da Cana-de-Açúcar
+
+```
+1. Carregamento automático após consulta de clima
+
+2. GET /quotation ou GET /api/v1/quotation
+   - Tenta endpoint sem prefixo primeiro
+   - Se 404: Tenta com /api/v1/
+   - Cache backend: 1 hora
+   
+3. Exibe gráfico LineChart:
+   - Últimos 10 fechamentos
+   - Linha verde escura: Campo (R$/ton)
+   - Linha verde clara: Esteira (R$/ton)
+   
+4. Cards de estatísticas:
+   - Última cotação Campo
+   - Última cotação Esteira
+   - Variação percentual (período)
+   - Diferença Campo vs Esteira
+   
+5. Tooltip customizado ao hover no gráfico
+
+6. Link para fonte dos dados (Notícias Agrícolas)
+```
+
+### 6.6 Exportação de Dados
+
+```
+1. Botões de exportação disponíveis:
+   - Desktop: Compact variant (topo da página)
+   - Mobile: Floating variant (canto inferior direito)
+   
+2. Opções de exportação:
+   CSV:
+   - Dados climáticos
+   - Insights
+   - Notícias
+   - Cotação
+   - Relatório completo (todos os dados)
+   
+   PDF:
+   - Página visual (captura da tela com html2canvas)
+   
+3. Fluxo CSV:
+   - Gera arquivo com separador vírgula
+   - Encoding UTF-8 com BOM (compatibilidade Excel)
+   - Inclui timestamp e metadados
+   - Download automático via Blob
+   
+4. Fluxo PDF:
+   - Captura elemento HTML com html2canvas (scale: 2)
+   - Gera jsPDF (formato A4)
+   - Quebra de página automática se necessário
+   - Download automático
+   
+5. Loading state durante exportação
+
+6. Toast de sucesso/erro
 ```
 
 ---
 
-## 6. Gerenciamento de Estado
+## 7. Gerenciamento de Estado
 
-### 6.1 Estado do Servidor (TanStack Query)
+### 7.1 Estado do Servidor (TanStack Query)
 
 ```typescript
 // Cache automático de requisições
@@ -220,8 +341,7 @@ useQuery({
   queryFn: () => fetchWeather(lat, lon),
   staleTime: 30 * 60 * 1000, // 30 minutos (alinhado com cache do backend)
   retry: (failureCount, error) => {
-    // Não retenta 429 automaticamente via TanStack Query
-    if (error.response?.status === 429) return false;
+    if (error.response?.status === 429) return false; // Não retenta 429
     return failureCount < 2;
   },
   retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -232,34 +352,43 @@ useQuery({
 - `['weather', lat, lon]` - Dados climáticos (30min cache)
 - `['insights', location]` - Insights por localização (5min cache)
 - `['news']` - Notícias (1h cache)
+- `['quotation']` - Cotação da cana (1h cache)
 
-### 6.2 Estado Local (React useState)
+### 7.2 Estado Local (React useState)
 
 - Localização selecionada
 - Estado de modais/drawers
 - Query de busca (autocomplete)
-- **Cooldown de rate limiting** (timestamp do último 429)
+- Cooldown de rate limiting (timestamp do último 429)
 
-### 6.3 Formulários (React Hook Form + Zod)
+### 7.3 Formulários (React Hook Form + Zod)
 
-- Validação em tempo real
-- Type-safety completa
-- Mensagens de erro customizadas
+```typescript
+// Schema de validação
+const createInsightSchema = z.object({
+  authorName: z.string().min(2).max(100),
+  authorRole: z.string().max(50).optional(),
+  content: z.string().min(10).max(1000),
+  tags: z.array(z.string().min(2).max(30)).max(5),
+});
+```
 
 ---
 
-## 7. Tratamento de Rate Limiting
+## 8. Tratamento de Rate Limiting
 
-### 7.1 Limites Implementados no Backend (Nginx)
+### 8.1 Limites Implementados no Backend (Nginx)
 
 | Endpoint | Rate Limit | Burst | Uso Frontend |
 |----------|-----------|-------|--------------|
 | `/api/v1/locations/search` | 5 req/s | 10 | Autocomplete (debounce 300ms mitiga) |
-| `/api/v1/weather` | 1 req/s | 20 | Consulta clima (usuário interage) |
-| `/api/v1/insights` (POST) | 10 req/min | 5 | Compartilhar insight (ação deliberada) |
+| `/api/v1/weather` | 1 req/s | 20 | Consulta clima |
+| `/api/v1/insights` (POST) | 10 req/min | 5 | Compartilhar insight |
 | `/api/v1/insights` (GET) | 1 req/s | 20 | Listar/paginar insights |
+| `/api/v1/news` | Sem limite | - | Feed de notícias (cache backend 1h) |
+| `/quotation` | Sem limite | - | Cotação (cache backend 1h) |
 
-### 7.2 Estratégias de Mitigação Client-Side
+### 8.2 Estratégias de Mitigação Client-Side
 
 **1. Debouncing (Autocomplete)**
 ```typescript
@@ -269,53 +398,42 @@ const debouncedSearch = useDebounce(searchTerm, 300);
 
 **2. Throttling (Scroll Infinito)**
 ```typescript
-const handleScroll = useCallback(
-  throttle(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, 2000), // Mínimo 2s entre requisições de paginação
-  [hasNextPage, isFetchingNextPage]
-);
+const handleScroll = throttle(() => {
+  if (hasNextPage && !isFetchingNextPage) {
+    fetchNextPage();
+  }
+}, 2000); // Mínimo 2s entre requisições
 ```
 
 **3. Cooldown Tracking**
 ```typescript
-const [rateLimitCooldown, setRateLimitCooldown] = useState<Date | null>(null);
+const { isInCooldown, remainingSeconds } = useRateLimitHandler();
 
-const isInCooldown = rateLimitCooldown && new Date() < rateLimitCooldown;
-
-// Desabilita botão de submit durante cooldown
-<Button disabled={isInCooldown || isSubmitting}>
+// Desabilita botão durante cooldown
+<Button disabled={isInCooldown}>
   {isInCooldown ? `Aguarde ${remainingSeconds}s` : 'Publicar'}
 </Button>
 ```
 
 **4. Retry com Exponential Backoff**
 ```typescript
-// lib/utils/retry.ts
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  initialDelay: number = 1000
-): Promise<T> {
+async function retryWithBackoff<T>(fn: () => Promise<T>): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
     } catch (error) {
       if (error.response?.status === 429) {
-        const retryAfter = error.response.headers['retry-after'] || Math.pow(2, i) * initialDelay;
-        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        const retryAfter = error.response.headers['retry-after'] || Math.pow(2, i);
+        await sleep(retryAfter * 1000);
         continue;
       }
       throw error;
     }
   }
-  throw new Error('Max retries exceeded');
 }
 ```
 
-### 7.3 Resposta a Erro 429
+### 8.3 Resposta a Erro 429
 
 **Estrutura do Erro do Backend:**
 ```json
@@ -329,105 +447,16 @@ async function retryWithBackoff<T>(
 ```
 
 **Tratamento no Frontend:**
-```typescript
-// lib/api/client.ts - Interceptor Axios
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.data.error?.retry_after || 60;
-      
-      toast.error(
-        `Limite de requisições atingido. Aguarde ${retryAfter}s.`,
-        { duration: retryAfter * 1000 }
-      );
-      
-      // Armazena timestamp para cooldown UI
-      const cooldownUntil = new Date(Date.now() + retryAfter * 1000);
-      localStorage.setItem('rateLimitCooldown', cooldownUntil.toISOString());
-      
-      return Promise.reject({
-        ...error,
-        isRateLimit: true,
-        retryAfter
-      });
-    }
-    return Promise.reject(error);
-  }
-);
-```
-
-**Componente de Aviso:**
-```typescript
-// components/shared/RateLimitWarning.tsx
-export function RateLimitWarning({ retryAfter }: { retryAfter: number }) {
-  const [remaining, setRemaining] = useState(retryAfter);
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setRemaining(prev => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-  
-  if (remaining === 0) return null;
-  
-  return (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-      <div className="flex items-center">
-        <ClockIcon className="h-5 w-5 text-yellow-400 mr-3" />
-        <p className="text-sm text-yellow-700">
-          Aguarde <strong>{remaining}s</strong> para fazer nova requisição
-        </p>
-      </div>
-    </div>
-  );
-}
-```
-
-### 7.4 Hook Customizado
-
-```typescript
-// hooks/useRateLimitHandler.ts
-export function useRateLimitHandler() {
-  const [cooldownUntil, setCooldownUntil] = useState<Date | null>(null);
-  
-  useEffect(() => {
-    const stored = localStorage.getItem('rateLimitCooldown');
-    if (stored) {
-      const date = new Date(stored);
-      if (date > new Date()) {
-        setCooldownUntil(date);
-      } else {
-        localStorage.removeItem('rateLimitCooldown');
-      }
-    }
-  }, []);
-  
-  const isInCooldown = cooldownUntil && new Date() < cooldownUntil;
-  const remainingSeconds = isInCooldown 
-    ? Math.ceil((cooldownUntil.getTime() - Date.now()) / 1000)
-    : 0;
-  
-  const handleRateLimitError = (retryAfter: number) => {
-    const until = new Date(Date.now() + retryAfter * 1000);
-    setCooldownUntil(until);
-    localStorage.setItem('rateLimitCooldown', until.toISOString());
-  };
-  
-  return {
-    isInCooldown,
-    remainingSeconds,
-    handleRateLimitError
-  };
-}
-```
+- Toast com duração customizada (retry_after * 1000ms)
+- Badge visual "Aguardando cooldown" com contador regressivo
+- Botão desabilitado durante cooldown
+- Persistência no localStorage (sincronização entre abas)
 
 ---
 
-## 8. Identidade Visual
+## 9. Identidade Visual
 
-### 8.1 Paleta de Cores
+### 9.1 Paleta de Cores
 
 ```
 Primárias:
@@ -439,14 +468,14 @@ Status:
 - Ideal: #27AE60
 - Atenção: #FFA940
 - Crítico: #E74C3C
-- Rate Limit: #FFA940 (laranja)
+- Rate Limit: #FFA940
 
 Backgrounds:
 - Branco: #FFFFFF
 - Cinza Claro: #F8F9FA
 ```
 
-### 8.2 Tipografia
+### 9.2 Tipografia
 
 ```
 Font: Inter (Google Fonts)
@@ -458,16 +487,7 @@ Body: 1rem / Regular
 Small: 0.875rem / Regular
 ```
 
-### 8.3 Componentes
-
-**Cards:** Shadow sutil, border-radius 12px, hover aumenta elevação  
-**Inputs:** Focus ring 2px na cor primária, ícones internos  
-**Badges:** Formato pill, cores semânticas  
-**Skeleton:** Gradiente animado (shimmer effect)  
-**Toasts:** Top-right, auto-dismiss 5s (exceto rate limit), tipos: success/error/info/loading/warning  
-**Rate Limit Badge:** Laranja com ícone de relógio
-
-### 8.4 Responsividade
+### 9.3 Responsividade
 
 ```
 Mobile (< 768px): 1 coluna, menu hamburger
@@ -477,166 +497,30 @@ Desktop (> 1024px): 3 colunas (clima + insights + notícias)
 
 ---
 
-## 9. Tratamento de Estados
+## 10. Otimizações
 
-### 9.1 Loading States
+### 10.1 Performance
 
-**Skeleton Screens (preferencial):** Mantém layout, gradiente animado  
-**Spinners:** Apenas em ações de usuário (submit)  
-**Toast loading:** "Buscando dados climáticos..."  
-**Cooldown Timer:** Contador regressivo em botões durante rate limit
-
-### 9.2 Empty States
-
-- Ilustração + mensagem amigável
-- CTA para ação (ex: "Compartilhar Insight")
-
-### 9.3 Error States
-
-**Erro Genérico:**
-- Ícone + título + mensagem clara
-- Botão "Tentar Novamente" (refetch)
-- Toast de erro
-
-**Erro 429 (Rate Limit):**
-- Toast laranja com duração customizada (retry_after)
-- Badge visual "Aguardando cooldown" com contador
-- Botão desabilitado com texto "Aguarde Xs"
-- Não exibe botão "Tentar Novamente" durante cooldown
-
-### 9.4 Toast Messages
-
-```typescript
-// Sucesso
-toast.success('Insight publicado!')
-
-// Erro genérico
-toast.error('Falha ao carregar. Tente novamente.')
-
-// Loading
-toast.loading('Salvando...')
-
-// Rate Limit (duração customizada)
-toast.error(
-  'Limite de requisições atingido. Aguarde 60s.',
-  { 
-    duration: 60000,
-    icon: '⏱️'
-  }
-)
-```
-
----
-
-## 10. Integrações de APIs
-
-### 10.1 Backend (FastAPI)
-
-**Base URL:** `process.env.NEXT_PUBLIC_API_URL`
-
-**Endpoints consumidos:**
-- `GET /api/v1/locations/search?q=...` - Autocomplete (5 req/s)
-- `GET /api/v1/weather?lat=...&lon=...&location_name=...` - Clima (1 req/s)
-- `POST /api/v1/insights` - Criar insight (10 req/min)
-- `GET /api/v1/insights?location=...&limit=20` - Listar insights (1 req/s)
-
-**Tratamento de erros:**
-```typescript
-// Interceptor global no Axios
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    const errorData = error.response?.data?.error;
-    
-    switch (status) {
-      case 429:
-        // Rate limit - Ver seção 7.3
-        handleRateLimitError(errorData);
-        break;
-        
-      case 400:
-        toast.error(errorData?.message || 'Dados inválidos');
-        break;
-        
-      case 404:
-        toast.error('Recurso não encontrado');
-        break;
-        
-      case 500:
-        toast.error('Erro no servidor. Tente novamente.');
-        break;
-        
-      case 503:
-        toast.error('Serviço temporariamente indisponível');
-        break;
-        
-      default:
-        if (!navigator.onLine) {
-          toast.error('Sem conexão com a internet');
-        } else {
-          toast.error('Erro inesperado. Tente novamente.');
-        }
-    }
-    
-    return Promise.reject(error);
-  }
-);
-```
-
-**Retry automático em falhas de rede:**
-- TanStack Query: 2 tentativas com backoff exponencial
-- Não retenta 429 (aguarda cooldown)
-
-### 10.2 NewsAPI
-
-**Endpoint:** `https://newsapi.org/v2/everything`
-
-**Configuração:**
-```typescript
-{
-  q: 'agronegócio OR "cana-de-açúcar"',
-  language: 'pt',
-  sortBy: 'publishedAt',
-  pageSize: 10
-}
-```
-
-**Rate limit:** 100 req/dia (plano gratuito) - mitigado com cache de 1h  
-**Fallback:** Se falhar, seção desaparece silenciosamente
-
----
-
-## 11. Otimizações
-
-### 11.1 Next.js Nativo
-
+- **Bundle inicial:** < 200KB (gzipped)
+- **Code Splitting:** Componentes pesados carregados sob demanda
 - **Image:** Lazy loading, formatos modernos (WebP), responsive
 - **Font:** Inter self-hosted, preload automático
-- **Code Splitting:** Componentes pesados carregados sob demanda
 
-### 11.2 Performance
-
-- **Bundle inicial:** Target < 200KB (gzipped)
-- **Debounce:** 300ms no autocomplete (previne rate limit)
-- **Throttle:** 2s no scroll infinito (previne rate limit)
-- **Cache:** TanStack Query alinhado com TTL do backend (30min)
-
-### 11.3 Rate Limiting Client-Side
+### 10.2 Rate Limiting Client-Side
 
 **Prevenção:**
-1. Debounce em campos de busca
-2. Throttle em eventos de scroll
+1. Debounce em campos de busca (300ms)
+2. Throttle em eventos de scroll (2s)
 3. Desabilitar botões após submit (cooldown)
-4. Cache agressivo para evitar requisições redundantes
+4. Cache agressivo (TanStack Query) para evitar requisições redundantes
 
 **Recuperação:**
 1. Retry automático com backoff exponencial
-2. UI feedback durante cooldown
-3. Persistência do estado de cooldown (localStorage)
+2. UI feedback durante cooldown (contador regressivo)
+3. Persistência do estado de cooldown (localStorage + sincronização entre abas)
 4. Mensagens claras sobre tempo de espera
 
-### 11.4 SEO
+### 10.3 SEO
 
 **Meta Tags no Root Layout:**
 ```typescript
@@ -650,99 +534,89 @@ export const metadata = {
 ```
 
 **Arquivos SEO:**
-- `public/robots.txt` - Configuração para crawlers
-- `public/sitemap.xml` - Mapa do site
-- `public/images/og-image.jpg` - Open Graph
+- `public/robots.txt`
+- `public/sitemap.xml`
+- `public/manifest.json` (PWA)
 
 ---
 
-## 12. Acessibilidade
-
-**WCAG 2.1 AA:**
-- Contraste de cores ≥ 4.5:1
-- Navegação completa via teclado
-- Labels claros em formulários
-- ARIA roles em componentes dinâmicos
-- HTML semântico (`<main>`, `<nav>`, `<article>`)
-- **Anúncio de rate limiting** via aria-live para leitores de tela
-
----
-
-## 13. Experiência Mobile
-
-**Layout Mobile:**
-1. Campo de busca (fixo no topo)
-2. Clima atual
-3. Análise para cana (colapsável)
-4. Insights
-5. Notícias (tabs ou bottom sheet)
-
-**Touch:**
-- Botões ≥ 44x44px
-- Feedback visual ao tocar
-- Pull-to-refresh nos insights (com throttling de 3s)
-
----
-
-## 14. Configuração Next.js
+## 11. Configuração Next.js
 
 ```javascript
-// next.config.js
+// next.config.ts
 const nextConfig = {
-  output: 'export',           // SSG
-  images: { unoptimized: true }, // S3 sem servidor de imagens
-  trailingSlash: true,        // URLs terminam com / para S3
+  output: 'export',                    // SSG
+  images: { unoptimized: true },       // S3 sem servidor de imagens
+  trailingSlash: true,                 // URLs terminam com / para S3
+  reactCompiler: true,                 // React Compiler (otimizações)
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts'],
+  },
 };
 ```
 
 ---
 
-## 15. Variáveis de Ambiente
+## 12. Funcionalidades Principais
 
-```bash
-# .env.local
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_NEWS_API_KEY=your_key
+### 12.1 Dashboard Climático
+- Busca de localização com autocomplete (mínimo 3 caracteres)
+- Geolocalização automática via navegador
+- Dados climáticos atuais e previsão de 5 dias
+- Análise específica para cultivo de cana-de-açúcar
+- Recomendações agronômicas baseadas nas condições atuais
 
-# .env.production
-NEXT_PUBLIC_API_URL=http://ec2-xx-xxx-xxx-xx.compute.amazonaws.com:8000
-NEXT_PUBLIC_NEWS_API_KEY=your_key
-```
+### 12.2 Fórum de Insights
+- Compartilhamento de experiências e práticas
+- Snapshot climático no momento da publicação
+- Sistema de tags para categorização
+- Filtros por localização, tags e ordenação
+- Scroll infinito com paginação
 
-## 16. Melhorias Futuras
+### 12.3 Feed de Notícias
+- Notícias do agronegócio via backend proxy
+- Cache de 1 hora no backend
+- Cards com imagem, título, fonte e data
+- Link externo para matéria completa
 
-### 16.1 Funcionalidades
-- PWA para instalação mobile
+### 12.4 Cotação da Cana
+- Últimos 10 fechamentos (Campo vs Esteira)
+- Gráfico interativo com Recharts
+- Estatísticas: variação, média, máx/mín
+- Diferença Campo vs Esteira (prêmio)
+- Fonte: Notícias Agrícolas (web scraping backend)
+
+### 12.5 Exportação de Dados
+- CSV: Clima, Insights, Notícias, Cotação ou Relatório Completo
+- PDF: Captura visual da página (html2canvas + jsPDF)
+- Botões adaptativos: Compact (desktop) e Floating (mobile)
+
+---
+
+## 13. Melhorias Futuras
+
+### 13.1 Funcionalidades
+- PWA completo (instalação mobile)
 - Dark mode
 - Perfis de usuário com autenticação JWT
-- Histórico de localizações recentes
+- Histórico de localizações favoritas
 - Sistema de notificações push (alertas críticos)
-- Export de relatórios em PDF
+- Export de relatórios personalizados
 
-### 16.2 Performance
+### 13.2 Performance
 - Service Worker para cache offline
 - Preload de localizações populares
-- **Request batching** para otimizar rate limits
+- Request batching para otimizar rate limits
+- Server-side rendering (SSR) para páginas dinâmicas
 
-### 16.3 Rate Limiting Avançado
-- **Client-side token bucket** para simulação local de limites
-- **Request queue** com priorização (clima > insights > notícias)
-- **Adaptive throttling** baseado em histórico de 429s
-- Dashboard de uso de API (quantos requests restam)
-
-### 16.4 SEO Avançado
-- Blog com artigos (Next.js + MDX)
-- Páginas estáticas para regiões produtoras
-
-### 16.5 Infraestrutura
-- CloudFront na frente do S3 (CDN global)
-- Monitoramento com Sentry (tracking de 429s)
-- CI/CD com GitHub Actions
-- Testes automatizados (Jest + Testing Library)
-- **Smoke tests** para verificar rate limits após deploy
+### 13.3 Rate Limiting Avançado
+- Client-side token bucket para simulação local de limites
+- Request queue com priorização
+- Adaptive throttling baseado em histórico de 429s
+- Dashboard de uso de API
 
 ---
 
 **Versão:** 1.0.0  
-**Última atualização:** Novembro 2025  
-**Stack:** Next.js 14+ | TypeScript | Tailwind CSS | TanStack Query
+**Última atualização:** Dezembro 2025  
+**Stack:** Next.js 15+ | TypeScript | Tailwind CSS v4 | TanStack Query

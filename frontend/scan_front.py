@@ -12,6 +12,7 @@ IGNORE_PATTERNS = [
     "node_modules",
     ".next",
     "package-lock.json",
+    "out",
     OUTPUT_FILE,
 ]
 

@@ -38,7 +38,25 @@ import type {
  * Traduz condição climática para PT-BR
  */
 export function translateWeatherCondition(condition: string): string {
-  return WEATHER_CONDITIONS[condition] || condition;
+  if (!condition) return 'N/A';
+
+  // Tenta encontrar a tradução exata
+  if (WEATHER_CONDITIONS[condition]) {
+    return WEATHER_CONDITIONS[condition];
+  }
+
+  // Tenta encontrar ignorando maiúsculas/minúsculas
+  const lowerCondition = condition.toLowerCase();
+  const foundKey = Object.keys(WEATHER_CONDITIONS).find(
+    key => key.toLowerCase() === lowerCondition
+  );
+
+  if (foundKey) {
+    return WEATHER_CONDITIONS[foundKey];
+  }
+
+  // Se não encontrar, retorna o original (fallback)
+  return condition;
 }
 
 /**

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List 
 from datetime import datetime
 
 class WeatherSnapshot(BaseModel):
@@ -14,9 +14,15 @@ class InsightLocation(BaseModel):
     lat: float
     lon: float
     state: Optional[str] = None
+    country: Optional[str] = "Brasil" 
+
+# --- NOVO: Modelo para o Autor ---
+class InsightAuthor(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    role: Optional[str] = Field(None, max_length=50)
 
 class InsightCreate(BaseModel):
-    author_name: str = Field(..., min_length=2, max_length=100)
+    author: InsightAuthor 
     location: InsightLocation
     weather_snapshot: WeatherSnapshot
     content: str = Field(..., min_length=10, max_length=1000)
@@ -24,7 +30,7 @@ class InsightCreate(BaseModel):
 
 class InsightResponse(BaseModel):
     id: str
-    author_name: str
+    author: InsightAuthor
     location: dict
     weather_snapshot: dict
     content: str

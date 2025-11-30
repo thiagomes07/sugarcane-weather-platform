@@ -53,7 +53,7 @@ export function InsightsList({
   if (isError) {
     return (
       <ErrorMessage
-        title="Erro ao Carregar Insights"
+        title="Erro ao Carregar Ideias"
         message={error instanceof Error ? error.message : 'Erro desconhecido'}
         onRetry={refetch}
         className={className}
@@ -76,7 +76,7 @@ export function InsightsList({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Insights da Comunidade
+            Ideias da Comunidade
           </h3>
           <p className="text-sm text-muted-foreground">
             {totalInsights} {totalInsights === 1 ? 'insight compartilhado' : 'insights compartilhados'}
@@ -115,7 +115,7 @@ export function InsightsList({
       {/* End Message */}
       {!hasNextPage && insights.length > 0 && (
         <p className="text-center text-sm text-muted-foreground py-4">
-          Você viu todos os insights disponíveis
+          Você viu todos as Ideias disponíveis
         </p>
       )}
     </div>

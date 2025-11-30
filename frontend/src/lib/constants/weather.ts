@@ -4,22 +4,26 @@
  */
 
 // Mapa de condições climáticas (OpenWeather main → PT-BR)
+// Mapa de condições climáticas (Chave em Inglês -> Valor em PT-BR)
 export const WEATHER_CONDITIONS: Record<string, string> = {
-  Thunderstorm: 'Tempestade',
-  Drizzle: 'Garoa',
-  Rain: 'Chuva',
-  Snow: 'Neve',
-  Mist: 'Névoa',
-  Smoke: 'Fumaça',
-  Haze: 'Neblina',
-  Dust: 'Poeira',
-  Fog: 'Nevoeiro',
-  Sand: 'Areia',
-  Ash: 'Cinzas',
-  Squall: 'Rajada de Vento',
-  Tornado: 'Tornado',
-  Clear: 'Céu Limpo',
-  Clouds: 'Nublado',
+  // Principais
+  'Clear': 'Céu Limpo',
+  'Clouds': 'Nublado',
+  'Rain': 'Chuva',
+  'Drizzle': 'Garoa',
+  'Thunderstorm': 'Tempestade',
+  'Snow': 'Neve',
+  'Mist': 'Névoa',
+  'Fog': 'Nevoeiro',
+  'Haze': 'Neblina',
+  
+  // Variações e Outros
+  'Smoke': 'Fumaça',
+  'Dust': 'Poeira',
+  'Sand': 'Areia',
+  'Ash': 'Cinzas',
+  'Squall': 'Rajada de Vento',
+  'Tornado': 'Tornado',
 };
 
 // Descrições detalhadas (OpenWeather description → PT-BR)

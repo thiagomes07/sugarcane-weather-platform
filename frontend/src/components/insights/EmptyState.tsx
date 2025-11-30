@@ -30,11 +30,11 @@ export function EmptyState({ onCreateClick, className }: EmptyStateProps) {
 
           {/* Text */}
           <h3 className="text-xl font-bold text-gray-900 mb-2">
-            Nenhum Insight Compartilhado Ainda
+            Nenhuma Ideia Compartilhado Ainda
           </h3>
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
             Seja o primeiro a compartilhar sua experiência com a comunidade!
-            Ajude outros produtores com insights sobre cultivo nessas condições
+            Ajude outros produtores com ideias sobre cultivo nessas condições
             climáticas.
           </p>
 
@@ -46,7 +46,7 @@ export function EmptyState({ onCreateClick, className }: EmptyStateProps) {
               className="gap-2 shadow-lg hover:shadow-xl transition-all"
             >
               <MessageSquarePlus className="h-5 w-5" />
-              Compartilhar Meu Insight
+              Compartilhar Minha Ideia
             </Button>
           )}
 

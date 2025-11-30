@@ -120,7 +120,7 @@ export function InsightForm({ location, weather, onSuccess, className }: Insight
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>Compartilhar Insight</CardTitle>
+        <CardTitle>Compartilhar Ideias</CardTitle>
         <CardDescription>
           Compartilhe sua experiência com outros produtores
         </CardDescription>
@@ -160,7 +160,7 @@ export function InsightForm({ location, weather, onSuccess, className }: Insight
           {/* Conteúdo */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Seu Insight <span className="text-red-500">*</span>
+              Sua Ideia <span className="text-red-500">*</span>
             </label>
             <textarea
               id="content"
@@ -268,7 +268,7 @@ export function InsightForm({ location, weather, onSuccess, className }: Insight
               ) : isPending ? (
                 'Publicando...'
               ) : (
-                'Publicar Insight'
+                'Publicar Ideia'
               )}
             </Button>
 

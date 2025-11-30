@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatRelativeTime, formatTemperature, formatPercentage } from '@/lib/utils/format';
 import type { Insight } from '@/types/insight';
 import { cn } from '@/lib/utils';
+import { translateWeatherCondition } from '@/lib/utils/weather';
 
 interface InsightCardProps {
   insight: Insight;
@@ -132,7 +133,7 @@ export function InsightCard({ insight, className }: InsightCardProps) {
             <div className="flex-1 min-w-0 text-right">
               <p className="text-xs text-muted-foreground">Condição</p>
               <p className="text-sm font-medium text-gray-900 truncate">
-                {insight.weather_snapshot.condition}
+                {translateWeatherCondition(insight.weather_snapshot.condition)}
               </p>
             </div>
           </div>

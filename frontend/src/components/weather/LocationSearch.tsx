@@ -178,7 +178,7 @@ export function LocationSearch({ onSelect, className }: LocationSearchProps) {
                     onMouseEnter={() => setHighlightedIndex(index)}
                     className={cn(
                       'w-full px-4 py-3 text-left transition-colors',
-                      'hover:bg-primary/5',
+                      'hover:bg-primary/5 cursor-pointer',
                       highlightedIndex === index && 'bg-primary/5',
                       'focus:outline-none focus:bg-primary/10'
                     )}

@@ -1,5 +1,3 @@
-// ARQUIVO: src/app/page.tsx
-// Exemplo de como integrar o componente SugarcaneQuotation
 
 "use client";
 
@@ -23,8 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWeather } from "@/hooks/useWeather";
 import { useInsightsTags } from "@/hooks/useInsights";
-
-// ✅ ADICIONE ESTA IMPORTAÇÃO
+import { ExportButtons } from "@/components/shared/ExportButtons";
 import { SugarcaneQuotation } from "@/components/quotation/SugarcaneQuotation";
 
 import type { LocationSearchResult } from "@/types/location";
@@ -156,7 +153,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      <main className="flex-1 bg-gray-50/50">
+      <main id="main" className="flex-1 bg-gray-50/50">
         {/* Search Header */}
         <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
           <Container>
@@ -178,6 +175,25 @@ export default function Home() {
 
         {/* Dashboard Content */}
         <Container className="py-8">
+          {/* ✨ BOTÕES DE EXPORTAÇÃO - Variante Floating (Mobile) */}
+          <ExportButtons
+            weatherData={weatherData}
+            location={location?.display_name}
+            variant="floating"
+            className="md:hidden"
+          />
+
+          {/* ✨ BOTÕES DE EXPORTAÇÃO - Variante Compact (Desktop, no topo) */}
+          {weatherData && !isLoadingWeather && !isErrorWeather && (
+            <div className="hidden md:flex justify-end mb-4">
+              <ExportButtons
+                weatherData={weatherData}
+                location={location?.display_name}
+                variant="compact"
+              />
+            </div>
+          )}
+
           {/* Loading State */}
           {isLoadingWeather && <WeatherSkeleton />}
 
@@ -215,6 +231,7 @@ export default function Home() {
                 {/* Forecast Charts */}
                 <ForecastChart forecast={weatherData.forecast} />
 
+                {/* Quotation */}
                 <div className="pt-6">
                   <SugarcaneQuotation />
                 </div>
